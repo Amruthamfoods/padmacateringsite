@@ -4,7 +4,7 @@ import toast from 'react-hot-toast'
 import api from '../lib/api'
 
 const EVENT_TYPES = [
-  { label: 'Wedding', icon: 'fa-solid fa-rings-wedding' },
+  { label: 'Wedding', icon: 'fa-solid fa-ring' },
   { label: 'Birthday', icon: 'fa-solid fa-cake-candles' },
   { label: 'Reception', icon: 'fa-solid fa-champagne-glasses' },
   { label: '1st Birthday', icon: 'fa-solid fa-baby' },
