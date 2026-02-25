@@ -10,7 +10,7 @@ const slides = [
   },
   {
     img: 'https://images.unsplash.com/photo-1567521464027-f127ff144326?w=1920&auto=format&q=80',
-    tag: '1 Crore+ Plates Served · 3800+ Events',
+    tag: '1 Crore+ Plates Served · 5000+ Events',
     title: 'True Indian Flavours',
     em: 'Crafted with Love',
     sub: 'From intimate gatherings to grand weddings — we make every plate count',
@@ -24,7 +24,7 @@ const slides = [
   },
   {
     img: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1920&auto=format&q=80',
-    tag: 'MVP Sector 8, Visakhapatnam',
+    tag: 'We serve in Andhra Pradesh, Telangana, Odisha',
     title: 'Your Dream Event',
     em: 'Perfectly Catered',
     sub: 'Let us transform your celebration into an unforgettable experience',
@@ -90,7 +90,7 @@ export default function HeroSlider({ onBookNow }) {
             { icon: 'fa-regular fa-clock', lbl: 'Mon – Fri', val: '08:00 AM – 10:00 PM' },
             { icon: 'fa-regular fa-clock', lbl: 'Sat – Sun', val: '10:00 AM – 11:00 PM' },
             { icon: 'fa-solid fa-phone', lbl: 'Reservations', val: '+91 86 86 622 722' },
-            { icon: 'fa-solid fa-location-dot', lbl: 'Location', val: 'MVP Sector 8, Vizag' },
+            { icon: 'fa-solid fa-location-dot', lbl: 'Serving', val: 'AP · Telangana · Odisha' },
           ].map(item => (
             <div className="hs-info-item" key={item.lbl}>
               <i className={item.icon} />

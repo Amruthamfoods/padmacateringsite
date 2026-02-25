@@ -5,7 +5,7 @@ import useScrollReveal from '../hooks/useScrollReveal'
 const services = [
   {
     img: 'https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=900&auto=format&q=80',
-    icon: 'fa-solid fa-heart',
+    icon: 'fa-solid fa-ring',
     title: 'Weddings & Celebrations',
     desc: 'Your wedding day deserves culinary perfection. We craft bespoke menus — from the mehendi brunch to the grand wedding feast — tailored to your traditions, preferences, and guest list.',
     includes: ['Multi-cuisine buffet setups', 'Live dosa & chaat counters', 'Dessert and sweet stations', 'Customised welcome drinks', 'Traditional thaali service', 'Cocktail-style starters round'],

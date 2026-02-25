@@ -27,6 +27,7 @@ import CouponsPage from './pages/admin/CouponsPage'
 import CustomersPage from './pages/admin/CustomersPage'
 import SettingsPage from './pages/admin/SettingsPage'
 import QuotesAdminPage from './pages/admin/QuotesAdminPage'
+import ConsultationPage from './pages/ConsultationPage'
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -53,16 +54,15 @@ function AdminRoute({ children }) {
 function AppInner() {
   const [menuOpen, setMenuOpen] = useState(false)
   const { pathname } = useLocation()
+  const navigate = useNavigate()
 
   useScrollReveal()
 
   const isAdminRoute = pathname.startsWith('/admin')
   const isFullPage = isAdminRoute ||
-    ['/login', '/register', '/account'].some(p => pathname === p || pathname.startsWith(p + '/'))
+    ['/login', '/register', '/account', '/consultation'].some(p => pathname === p || pathname.startsWith(p + '/'))
 
-  const goToBooking = () => {
-    window.location.href = 'https://padmacatering.com/booking/'
-  }
+  const goToConsultation = () => navigate('/consultation')
 
   return (
     <>
@@ -70,17 +70,18 @@ function AppInner() {
       <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
 
       {!isFullPage && (
-        <Navbar onBookNow={goToBooking} onViewMenu={() => setMenuOpen(true)} />
+        <Navbar onBookNow={goToConsultation} onViewMenu={() => setMenuOpen(true)} />
       )}
 
       <main>
         <Routes>
-          <Route path="/" element={<HomePage onBookNow={goToBooking} />} />
-          <Route path="/about" element={<AboutPage onBookNow={goToBooking} />} />
-          <Route path="/services" element={<ServicesPage onBookNow={goToBooking} />} />
-          <Route path="/gallery" element={<GalleryPage onBookNow={goToBooking} />} />
-          <Route path="/contact" element={<ContactPage onBookNow={goToBooking} />} />
-          <Route path="/menus" element={<MenusPage onBookNow={goToBooking} />} />
+          <Route path="/" element={<HomePage onBookNow={goToConsultation} />} />
+          <Route path="/about" element={<AboutPage onBookNow={goToConsultation} />} />
+          <Route path="/services" element={<ServicesPage onBookNow={goToConsultation} />} />
+          <Route path="/gallery" element={<GalleryPage onBookNow={goToConsultation} />} />
+          <Route path="/contact" element={<ContactPage onBookNow={goToConsultation} />} />
+          <Route path="/menus" element={<MenusPage onBookNow={goToConsultation} />} />
+          <Route path="/consultation" element={<ConsultationPage />} />
 
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
