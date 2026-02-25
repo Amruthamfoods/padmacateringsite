@@ -11,8 +11,9 @@ const EVENT_TYPES = [
 ]
 
 const BUDGETS = [
-  'Below ₹1 Lakh', '₹1 – 3 Lakhs', '₹3 – 5 Lakhs',
-  '₹5 – 10 Lakhs', '₹10 Lakhs+', 'Not decided yet',
+  'Below ₹50,000', '₹50,000 – ₹1 Lakh', '₹1 – 2 Lakhs',
+  '₹2 – 3 Lakhs', '₹3 – 5 Lakhs', '₹5 – 10 Lakhs',
+  '₹10 Lakhs+', 'Not decided yet',
 ]
 
 const SERVING_STYLES = ['Buffet', 'Plated / Sit-down', 'Live Counters', 'Combination', 'Not sure yet']
