@@ -1,0 +1,214 @@
+@import "tailwindcss";
+
+/* ================================================
+   CSS VARIABLES — Elegant Dark Restaurant
+   Inspired by: Food Tales Catering
+   Near-black charcoal + Warm Champagne Gold
+================================================ */
+:root {
+  /* Backgrounds — refined dark charcoal */
+  --dark-1:        #171819;   /* Body background */
+  --dark-2:        #1C1E1F;   /* Section alt */
+  --dark-3:        #232526;   /* Card / surface */
+  --dark-4:        #2C2E30;   /* Elevated card */
+  --dark-5:        #333638;   /* Hover surface */
+
+  /* Champagne Gold accent — warm, not yellow */
+  --gold:          #E4C590;   /* Primary accent */
+  --gold-dim:      #C8A874;   /* Subdued */
+  --gold-bright:   #F0D8A8;   /* Hover / highlight */
+  --gold-pale:     #F5ECD8;   /* Very light accent */
+
+  /* Separator/subtle accent */
+  --gold-line:     rgba(228,197,144,0.25);
+  --gold-glow:     rgba(228,197,144,0.12);
+
+  /* Typography */
+  --white:         #FFFFFF;
+  --text-warm:     #D4C4A8;
+  --text-muted:    #888580;
+  --text-faint:    #5A5856;
+
+  /* Fonts — matching Food Tales */
+  --font-display:  'Forum', 'Cormorant Garamond', Georgia, serif;
+  --font-body:     'DM Sans', sans-serif;
+
+  /* Motion */
+  --ease:          cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --ease-out:      cubic-bezier(0.0, 0.0, 0.2, 1.0);
+
+  /* Geometry */
+  --radius:        4px;
+  --radius-sm:     3px;
+  --radius-lg:     8px;
+
+  /* Shadows */
+  --shadow-sm:     0 2px 12px rgba(0,0,0,0.35);
+  --shadow-md:     0 8px 32px rgba(0,0,0,0.5);
+  --shadow-lg:     0 20px 60px rgba(0,0,0,0.65);
+  --shadow-gold:   0 8px 40px rgba(228,197,144,0.2);
+
+  /* Glass */
+  --glass:         rgba(255,255,255,0.03);
+  --glass-border:  rgba(255,255,255,0.07);
+}
+
+/* ================================================
+   RESET & BASE
+================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font-body);
+  background: var(--dark-1);
+  color: var(--text-warm);
+  overflow-x: hidden;
+  line-height: 1.75;
+  font-weight: 400;
+  font-size: 15px;
+}
+img { max-width: 100%; height: auto; display: block; }
+a { text-decoration: none; color: inherit; }
+ul { list-style: none; }
+
+/* ================================================
+   LAYOUT
+================================================ */
+.container {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+.section     { padding: 120px 0; }
+.section-sm  { padding: 72px 0; }
+.centered    { text-align: center; }
+
+/* ================================================
+   TYPOGRAPHY HELPERS
+================================================ */
+.section-label {
+  font-family: var(--font-body);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.5em;
+  text-transform: uppercase;
+  color: var(--gold);
+  display: block;
+  margin-bottom: 16px;
+}
+.section-title {
+  font-family: var(--font-display);
+  font-size: clamp(2.2rem, 5vw, 4rem);
+  font-weight: 400;
+  color: var(--white);
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+}
+.section-title em {
+  font-style: italic;
+  color: var(--gold);
+}
+/* Ornate divider — like Food Tales */
+.section-divider {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 20px 0 40px;
+}
+.section-divider::before,
+.section-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--gold-line);
+}
+.section-divider .dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--gold);
+  flex-shrink: 0;
+  box-shadow: 0 0 8px rgba(228,197,144,0.5);
+}
+/* Diamond ornament variant */
+.ornament {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--gold);
+  font-size: 0.45rem;
+  margin: 16px 0 36px;
+}
+.ornament::before,
+.ornament::after {
+  content: '— ✦ —';
+  color: var(--gold-dim);
+  font-size: 0.55rem;
+  letter-spacing: 0.3em;
+}
+
+/* ================================================
+   SCROLL REVEAL
+================================================ */
+.reveal, .reveal-l, .reveal-r {
+  opacity: 0;
+  transition: opacity 0.9s var(--ease), transform 0.9s var(--ease);
+}
+.reveal   { transform: translateY(40px); }
+.reveal-l { transform: translateX(-40px); }
+.reveal-r { transform: translateX(40px); }
+.reveal.in, .reveal-l.in, .reveal-r.in { opacity: 1; transform: none; }
+.d1 { transition-delay: 0.08s; }
+.d2 { transition-delay: 0.18s; }
+.d3 { transition-delay: 0.28s; }
+.d4 { transition-delay: 0.38s; }
+
+/* ================================================
+   BUTTONS
+================================================ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 14px 36px;
+  font-family: var(--font-body);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  border-radius: 2px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.32s var(--ease);
+  white-space: nowrap;
+}
+.btn-primary {
+  background: var(--gold);
+  color: var(--dark-1);
+  box-shadow: 0 4px 20px rgba(228,197,144,0.3);
+}
+.btn-primary:hover {
+  background: var(--gold-bright);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 32px rgba(228,197,144,0.4);
+}
+.btn-marigold {
+  background: var(--gold);
+  color: var(--dark-1);
+  box-shadow: 0 4px 20px rgba(228,197,144,0.25);
+}
+.btn-marigold:hover {
+  background: var(--gold-bright);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 32px rgba(228,197,144,0.38);
+}
+.btn-outline {
+  background: transparent;
+  color: var(--white);
+  border: 1px solid rgba(228,197,144,0.4);
+}
+.btn-outline:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+  transform: translateY(-2px);
+  background: rgba(228,197,144,0.05);
+}
