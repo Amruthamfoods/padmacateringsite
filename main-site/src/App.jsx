@@ -60,7 +60,7 @@ function AppInner() {
 
   const isAdminRoute = pathname.startsWith('/admin')
   const isFullPage = isAdminRoute ||
-    ['/login', '/register', '/account', '/consultation'].some(p => pathname === p || pathname.startsWith(p + '/'))
+    ['/login', '/register', '/account'].some(p => pathname === p || pathname.startsWith(p + '/'))
 
   const goToConsultation = () => navigate('/consultation')
 
