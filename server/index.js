@@ -1,6 +1,7 @@
 require('dotenv').config()
 const express    = require('express')
 const cors       = require('cors')
+const path       = require('path')
 const nodemailer = require('nodemailer')
 const { PrismaClient } = require('@prisma/client')
 const { authLimiter } = require('./middleware/rateLimiter')
@@ -16,8 +17,15 @@ const app    = express()
 const PORT   = process.env.PORT || 3001
 const prisma = new PrismaClient()
 
-app.use(cors({ origin: /http:\/\/localhost:\d+/ }))
+app.use(cors({ origin: process.env.CORS_ORIGIN ? new RegExp(process.env.CORS_ORIGIN) : /http:\/\/localhost:\d+/ }))
 app.use(express.json())
+
+/* ─── Serve booking portal static files at /booking ─── */
+const bookingDist = path.join(__dirname, '../booking-portal/dist')
+app.use('/booking', express.static(bookingDist))
+app.get('/booking/*', (_req, res) => {
+  res.sendFile(path.join(bookingDist, 'index.html'))
+})
 
 /* ─── Mount routers ─── */
 app.use('/api/auth',    authLimiter, authRouter)
@@ -122,6 +130,13 @@ app.post('/api/consultation', async (req, res) => {
 
 /* ─── Health check ─── */
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }))
+
+/* ─── Serve main site static files (catch-all — must be last) ─── */
+const mainDist = path.join(__dirname, '../main-site/dist')
+app.use(express.static(mainDist))
+app.get('*', (_req, res) => {
+  res.sendFile(path.join(mainDist, 'index.html'))
+})
 
 /* ─── Start ─── */
 async function start() {
