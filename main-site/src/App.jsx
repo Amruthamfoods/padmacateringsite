@@ -61,7 +61,7 @@ function AppInner() {
     ['/login', '/register', '/account'].some(p => pathname === p || pathname.startsWith(p + '/'))
 
   const goToBooking = () => {
-    window.location.href = '/booking/'
+    window.location.href = 'https://padmacatering.com/booking/'
   }
 
   return (
