@@ -61,7 +61,7 @@ function AppInner() {
     ['/login', '/register', '/account'].some(p => pathname === p || pathname.startsWith(p + '/'))
 
   const goToBooking = () => {
-    window.location.href = '/padmacateringsite/booking/'
+    window.location.href = '/booking/'
   }
 
   return (
@@ -113,7 +113,7 @@ function AppInner() {
 
 export default function App() {
   return (
-    <BrowserRouter basename="/padmacateringsite">
+    <BrowserRouter basename="/">
       <AppInner />
     </BrowserRouter>
   )

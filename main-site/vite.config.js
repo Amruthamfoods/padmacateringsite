@@ -4,7 +4,7 @@ import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  base: '/padmacateringsite/',
+  base: '/',
   server: {
     port: 5173,
     proxy: {

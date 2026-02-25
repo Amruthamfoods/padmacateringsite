@@ -76,13 +76,13 @@ export default function BookingSuccessPage() {
         </div>
 
         <div className="success-actions">
-          <a href="/padmacateringsite/booking/" className="btn btn-outline">
+          <a href="/booking/" className="btn btn-outline">
             <i className="fa-solid fa-plus" /> {isQuote ? 'New Request' : 'Book Another'}
           </a>
         </div>
 
         <p style={{ marginTop: 20 }}>
-          <a href="/padmacateringsite/" style={{ fontSize: '0.82rem', color: 'var(--text-muted)', textDecoration: 'none' }}>← Back to Home</a>
+          <a href="/" style={{ fontSize: '0.82rem', color: 'var(--text-muted)', textDecoration: 'none' }}>← Back to Home</a>
         </p>
       </div>
     </div>

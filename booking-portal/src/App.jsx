@@ -13,7 +13,7 @@ import QuoteFormPage from './pages/custom/QuoteFormPage'
 
 export default function App() {
   return (
-    <BrowserRouter basename="/padmacateringsite/booking">
+    <BrowserRouter basename="/">
       <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
       <Routes>
         <Route path="/" element={<LandingPage />} />

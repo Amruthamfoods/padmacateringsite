@@ -10,7 +10,7 @@ export default function LandingPage() {
 
   return (
     <div className="booking-page" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 20px' }}>
-      <a href="/padmacateringsite/" style={{ position: 'absolute', top: 20, left: 20, fontSize: '0.82rem', color: 'var(--text-muted)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
+      <a href="/" style={{ position: 'absolute', top: 20, left: 20, fontSize: '0.82rem', color: 'var(--text-muted)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
         <i className="fa-solid fa-arrow-left" /> Back to Padma Catering
       </a>
 
