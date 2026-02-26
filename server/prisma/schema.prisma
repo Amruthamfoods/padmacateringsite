@@ -137,8 +137,19 @@ model Booking {
   eventType           String
   eventDate           DateTime
   guestCount          Int
+  vegCount            Int               @default(0)
+  nonVegCount         Int               @default(0)
   venueAddress        String?
   servingStyle        ServingStyle      @default(BUFFET)
+  deliveryType        DeliveryType      @default(GATE)
+  deliveryCharge      Float             @default(0)
+  staffCount          Int               @default(0)
+  staffCharge         Float             @default(0)
+  addonCharge         Float             @default(0)
+  dietPreference      DietPreference    @default(NON_VEG)
+  spiceLevel          SpiceLevel        @default(MEDIUM)
+  timeSlot            String?
+  paymentPlan         PaymentPlan       @default(FULL)
   status              BookingStatus     @default(PENDING)
   specialInstructions String?
   couponId            Int?
@@ -165,6 +176,29 @@ enum BookingStatus {
   CONFIRMED
   COMPLETED
   CANCELLED
+}
+
+enum DeliveryType {
+  GATE
+  DOORSTEP
+  DOORSTEP_SERVICE
+}
+
+enum DietPreference {
+  VEG
+  NON_VEG
+  SEPARATE
+}
+
+enum SpiceLevel {
+  MILD
+  MEDIUM
+  SPICY
+}
+
+enum PaymentPlan {
+  FULL
+  ADVANCE
 }
 
 model BookingMenuItem {

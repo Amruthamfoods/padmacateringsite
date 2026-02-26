@@ -14,10 +14,14 @@ const transporter = nodemailer.createTransport({
 router.post('/', async (req, res) => {
   try {
     const {
-      eventType, eventDate, guestCount, venueAddress, servingStyle,
+      eventType, eventDate, guestCount, vegCount, nonVegCount,
+      venueAddress, servingStyle,
+      deliveryType, deliveryCharge, staffCount,
+      addonCost, dietPreference, spiceLevel, timeSlot, paymentPlan,
       menuItemIds, specialInstructions, couponCode, couponId,
       guestName, guestEmail, guestPhone, packageId,
       pricePerPerson: explicitPricePerPerson,
+      totalAmount,
     } = req.body
 
     if (!eventType || !eventDate || !guestCount) {
@@ -88,8 +92,19 @@ router.post('/', async (req, res) => {
         eventType,
         eventDate: new Date(eventDate),
         guestCount: parseInt(guestCount),
+        vegCount: parseInt(vegCount) || 0,
+        nonVegCount: parseInt(nonVegCount) || 0,
         venueAddress: venueAddress || null,
         servingStyle: servingStyle || 'BUFFET',
+        deliveryType: deliveryType || 'GATE',
+        deliveryCharge: parseFloat(deliveryCharge) || 0,
+        staffCount: parseInt(staffCount) || 0,
+        staffCharge: (parseInt(staffCount) || 0) * 650,
+        addonCharge: parseFloat(addonCost) || 0,
+        dietPreference: dietPreference || 'NON_VEG',
+        spiceLevel: spiceLevel || 'MEDIUM',
+        timeSlot: timeSlot || null,
+        paymentPlan: paymentPlan || 'FULL',
         specialInstructions: specialInstructions || null,
         couponId: resolvedCouponId,
         baseTotal,
@@ -129,7 +144,11 @@ router.post('/', async (req, res) => {
           <tr style="background:#f9f9f9;"><td style="padding:10px;font-weight:bold;">Event Date</td><td style="padding:10px;">${eventDate}</td></tr>
           <tr><td style="padding:10px;font-weight:bold;">Guests</td><td style="padding:10px;">${guestCount}</td></tr>
           <tr style="background:#f9f9f9;"><td style="padding:10px;font-weight:bold;">Venue</td><td style="padding:10px;">${venueAddress || 'TBD'}</td></tr>
-          <tr><td style="padding:10px;font-weight:bold;">Serving Style</td><td style="padding:10px;">${servingStyle || 'BUFFET'}</td></tr>
+          <tr><td style="padding:10px;font-weight:bold;">Time Slot</td><td style="padding:10px;">${timeSlot || 'TBD'}</td></tr>
+          <tr style="background:#f9f9f9;"><td style="padding:10px;font-weight:bold;">Delivery</td><td style="padding:10px;">${deliveryType || 'GATE'}</td></tr>
+          <tr><td style="padding:10px;font-weight:bold;">Diet Preference</td><td style="padding:10px;">${dietPreference || 'NON_VEG'}</td></tr>
+          <tr style="background:#f9f9f9;"><td style="padding:10px;font-weight:bold;">Spice Level</td><td style="padding:10px;">${spiceLevel || 'MEDIUM'}</td></tr>
+          <tr><td style="padding:10px;font-weight:bold;">Payment Plan</td><td style="padding:10px;">${paymentPlan || 'FULL'}</td></tr>
           <tr style="background:#f9f9f9;"><td style="padding:10px;font-weight:bold;">Total</td><td style="padding:10px;">₹${total.toFixed(0)}</td></tr>
           <tr><td style="padding:10px;font-weight:bold;">Menu Items</td><td style="padding:10px;">${menuList}</td></tr>
         </table>
