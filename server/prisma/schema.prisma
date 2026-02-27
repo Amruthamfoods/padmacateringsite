@@ -44,8 +44,9 @@ model MenuItem {
   type        DietType          @default(VEG)
   active      Boolean           @default(true)
   price       Float             @default(0)
-  packages    MenuPackageItem[]
-  bookings    BookingMenuItem[]
+  packages       MenuPackageItem[]
+  bookings       BookingMenuItem[]
+  allowedInRules PackageCategoryRuleItem[]
 }
 
 enum CuisineStyle {
@@ -84,14 +85,26 @@ model PackagePricingTier {
 }
 
 model PackageCategoryRule {
-  id         Int          @id @default(autoincrement())
-  packageId  Int
-  package    MenuPackage  @relation(fields: [packageId], references: [id], onDelete: Cascade)
-  categoryId Int
-  category   MenuCategory @relation(fields: [categoryId], references: [id])
-  label      String
-  minChoices Int          @default(1)
-  maxChoices Int
+  id             Int                       @id @default(autoincrement())
+  packageId      Int
+  package        MenuPackage               @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  categoryId     Int
+  category       MenuCategory              @relation(fields: [categoryId], references: [id])
+  label          String
+  minChoices     Int                       @default(1)
+  maxChoices     Int
+  extraItemPrice Float                     @default(0)
+  allowedItems   PackageCategoryRuleItem[]
+}
+
+model PackageCategoryRuleItem {
+  id         Int                 @id @default(autoincrement())
+  ruleId     Int
+  rule       PackageCategoryRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  menuItemId Int
+  menuItem   MenuItem            @relation(fields: [menuItemId], references: [id])
+
+  @@unique([ruleId, menuItemId])
 }
 
 model MenuPackageItem {

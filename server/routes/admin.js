@@ -274,7 +274,13 @@ router.get('/menu/packages', async (req, res) => {
       include: {
         items: { include: { menuItem: { include: { category: true } } } },
         pricingTiers: { orderBy: { minGuests: 'asc' } },
-        categoryRules: { include: { category: true }, orderBy: { id: 'asc' } },
+        categoryRules: {
+          include: {
+            category: true,
+            allowedItems: { include: { menuItem: { include: { category: true } } } },
+          },
+          orderBy: { id: 'asc' },
+        },
       },
       orderBy: { basePrice: 'asc' },
     })
@@ -377,7 +383,7 @@ router.delete('/packages/:id/tiers/:tierId', async (req, res) => {
 // Package Category Rules
 router.post('/packages/:id/rules', async (req, res) => {
   try {
-    const { categoryId, label, minChoices, maxChoices } = req.body
+    const { categoryId, label, minChoices, maxChoices, extraItemPrice, itemIds } = req.body
     const rule = await prisma.packageCategoryRule.create({
       data: {
         packageId: parseInt(req.params.id),
@@ -385,8 +391,15 @@ router.post('/packages/:id/rules', async (req, res) => {
         label,
         minChoices: parseInt(minChoices || 1),
         maxChoices: parseInt(maxChoices),
+        extraItemPrice: parseFloat(extraItemPrice || 0),
+        allowedItems: itemIds?.length
+          ? { create: itemIds.map(id => ({ menuItemId: parseInt(id) })) }
+          : undefined,
       },
-      include: { category: true },
+      include: {
+        category: true,
+        allowedItems: { include: { menuItem: { include: { category: true } } } },
+      },
     })
     res.status(201).json(rule)
   } catch (err) {
@@ -396,15 +409,32 @@ router.post('/packages/:id/rules', async (req, res) => {
 
 router.put('/packages/:id/rules/:ruleId', async (req, res) => {
   try {
-    const { categoryId, label, minChoices, maxChoices } = req.body
+    const { categoryId, label, minChoices, maxChoices, extraItemPrice, itemIds } = req.body
+    const ruleId = parseInt(req.params.ruleId)
     const data = {}
     if (categoryId !== undefined) data.categoryId = parseInt(categoryId)
     if (label !== undefined) data.label = label
     if (minChoices !== undefined) data.minChoices = parseInt(minChoices)
     if (maxChoices !== undefined) data.maxChoices = parseInt(maxChoices)
+    if (extraItemPrice !== undefined) data.extraItemPrice = parseFloat(extraItemPrice)
+
+    // Replace allowed items if itemIds provided
+    if (itemIds !== undefined) {
+      await prisma.packageCategoryRuleItem.deleteMany({ where: { ruleId } })
+      if (itemIds.length > 0) {
+        await prisma.packageCategoryRuleItem.createMany({
+          data: itemIds.map(id => ({ ruleId, menuItemId: parseInt(id) })),
+        })
+      }
+    }
+
     const rule = await prisma.packageCategoryRule.update({
-      where: { id: parseInt(req.params.ruleId) }, data,
-      include: { category: true },
+      where: { id: ruleId },
+      data,
+      include: {
+        category: true,
+        allowedItems: { include: { menuItem: { include: { category: true } } } },
+      },
     })
     res.json(rule)
   } catch (err) {

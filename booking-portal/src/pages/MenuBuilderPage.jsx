@@ -63,16 +63,23 @@ export default function MenuBuilderPage() {
     return new Set(pkg.items.map(pi => pi.menuItemId || pi.menuItem?.id).filter(Boolean))
   }, [pkg])
 
-  function toggleItem(ruleId, itemId, maxChoices) {
+  function toggleItem(ruleId, itemId, rule) {
+    const maxChoices = rule.maxChoices
+    const extrasAllowed = rule.extraItemPrice > 0
     setSelected(prev => {
       const next = { ...prev }
       const set  = new Set(prev[ruleId] || [])
       if (set.has(itemId)) {
         set.delete(itemId)
       } else {
-        if (set.size >= maxChoices) {
+        if (set.size >= maxChoices && !extrasAllowed) {
           toast.error(`Max ${maxChoices} items for this category`)
           return prev
+        }
+        if (set.size >= maxChoices && extrasAllowed) {
+          const item = allItems.find(i => i.id === itemId)
+          const itemPrice = item?.price || 0
+          toast(itemPrice > 0 ? `Extra item: +₹${itemPrice}/person` : 'Extra item added', { icon: '➕' })
         }
         set.add(itemId)
       }
@@ -97,14 +104,30 @@ export default function MenuBuilderPage() {
     const selectedItems = allItems.filter(i => allSelectedIds.has(i.id)).map(i => ({
       id: i.id, name: i.name, price: i.price, type: i.type, category: i.category?.name || '',
     }))
+
+    // Extra item cost: for each rule that allows extras, count items beyond maxChoices
+    // and sum their individual item prices × guestCount
+    let extraItemCost = 0
+    pkg.categoryRules.forEach(rule => {
+      if (rule.extraItemPrice > 0) {
+        const selIds = [...(selected[rule.id] || [])]
+        const extraCount = Math.max(0, selIds.length - rule.maxChoices)
+        if (extraCount > 0) {
+          const extraItems = allItems.filter(i => selIds.slice(rule.maxChoices).includes(i.id))
+          extraItems.forEach(item => { extraItemCost += (item.price || 0) * guestCount })
+        }
+      }
+    })
+
     const addonCost =
       (addonState.cutlery ? 20 * guestCount : 0) +
       (addonState.water   ? 10 * guestCount : 0) +
-      (addonState.spoon   * 20)
+      (addonState.spoon   * 20) +
+      extraItemCost
 
     sessionStorage.setItem('bookingStep2', JSON.stringify({
       items: selectedItems, tierPrice: pricePerPerson,
-      packageId: pkg.id, packageName: pkg.name, addonCost, addonState,
+      packageId: pkg.id, packageName: pkg.name, addonCost, addonState, extraItemCost,
     }))
     navigate('/details')
   }
@@ -134,7 +157,13 @@ export default function MenuBuilderPage() {
           {/* Left: Accordion sections */}
           <div>
             {pkg.categoryRules.map(rule => {
-              const categoryItems = allItems.filter(i => i.categoryId === rule.categoryId && packageItemIds.has(i.id))
+              const allowedIds = rule.allowedItems?.length
+                ? new Set(rule.allowedItems.map(ai => ai.menuItemId))
+                : null
+              const categoryItems = allItems.filter(i =>
+                i.categoryId === rule.categoryId &&
+                (allowedIds ? allowedIds.has(i.id) : packageItemIds.has(i.id))
+              )
               const selCount = selected[rule.id]?.size || 0
               const isDone   = selCount >= rule.minChoices
               const isOver   = selCount > rule.maxChoices
@@ -167,7 +196,7 @@ export default function MenuBuilderPage() {
                             <span key={item.id} className="selected-chip">
                               <span className={`diet-dot ${item.type === 'VEG' ? 'veg' : 'nonveg'}`} />
                               {item.name}
-                              <button onClick={() => toggleItem(rule.id, item.id, rule.maxChoices)}>×</button>
+                              <button onClick={() => toggleItem(rule.id, item.id, rule)}>×</button>
                             </span>
                           ))}
                         </div>
@@ -175,6 +204,7 @@ export default function MenuBuilderPage() {
 
                       <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: 10 }}>
                         Choose {rule.minChoices}–{rule.maxChoices} items
+                        {rule.extraItemPrice > 0 && <span style={{ color: 'var(--red)', marginLeft: 6 }}>· +₹{rule.extraItemPrice}/person for extra items</span>}
                       </p>
 
                       {categoryItems.length === 0 ? (
@@ -187,7 +217,7 @@ export default function MenuBuilderPage() {
                               <div
                                 key={item.id}
                                 className={`menu-item-card ${isSelected ? 'selected' : ''}`}
-                                onClick={() => toggleItem(rule.id, item.id, rule.maxChoices)}
+                                onClick={() => toggleItem(rule.id, item.id, rule)}
                               >
                                 <div className="menu-item-thumb">
                                   {item.image

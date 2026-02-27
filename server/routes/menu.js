@@ -49,7 +49,13 @@ router.get('/packages', async (req, res) => {
           },
         },
         pricingTiers: { orderBy: { minGuests: 'desc' } },
-        categoryRules: { include: { category: true }, orderBy: { id: 'asc' } },
+        categoryRules: {
+          include: {
+            category: true,
+            allowedItems: { include: { menuItem: { include: { category: true } } } },
+          },
+          orderBy: { id: 'asc' },
+        },
       },
       orderBy: { basePrice: 'asc' },
     })
