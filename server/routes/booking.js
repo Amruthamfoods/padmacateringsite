@@ -2,6 +2,9 @@ const router = require('express').Router()
 const nodemailer = require('nodemailer')
 const { PrismaClient } = require('@prisma/client')
 const authMiddleware = require('../middleware/auth')
+const validate = require('../middleware/validate')
+const logger = require('../utils/logger')
+const { sanitizeObject } = require('../utils/sanitizer')
 
 const prisma = new PrismaClient()
 
@@ -10,8 +13,11 @@ const transporter = nodemailer.createTransport({
   auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_PASS },
 })
 
-// POST /api/booking
-router.post('/', async (req, res) => {
+const STAFF_RATE = parseInt(process.env.STAFF_RATE_PER_PERSON || 650)
+const GST_RATE = parseFloat(process.env.GST_RATE || 0.05)
+
+// POST /api/booking - Create a new booking
+router.post('/', validate('createBooking'), async (req, res) => {
   try {
     const {
       eventType, eventDate, guestCount, vegCount, nonVegCount,
@@ -21,68 +27,109 @@ router.post('/', async (req, res) => {
       menuItemIds, specialInstructions, couponCode, couponId,
       guestName, guestEmail, guestPhone, packageId,
       pricePerPerson: explicitPricePerPerson,
-      totalAmount,
     } = req.body
-
-    if (!eventType || !eventDate || !guestCount) {
-      return res.status(400).json({ error: 'eventType, eventDate and guestCount are required' })
-    }
-    if (!menuItemIds || menuItemIds.length < 1) {
-      return res.status(400).json({ error: 'Please select at least one menu item' })
-    }
-    if (guestCount < 10) {
-      return res.status(400).json({ error: 'Minimum 10 guests required' })
-    }
 
     // Fetch selected items
     const items = await prisma.menuItem.findMany({
-      where: { id: { in: menuItemIds.map(Number) }, active: true },
+      where: { id: { in: menuItemIds.map(Number), active: true },
       include: { category: true },
     })
 
-    // If explicit pricePerPerson provided (preset tier flow), use it; otherwise sum item prices
-    const pricePerPerson = explicitPricePerPerson
-      ? parseFloat(explicitPricePerPerson)
-      : items.reduce((sum, item) => sum + item.price, 0)
-    const baseTotal = pricePerPerson * guestCount
-
-    // Apply coupon
-    let discount = 0
-    let resolvedCouponId = null
-    if (couponCode) {
-      const coupon = await prisma.coupon.findUnique({ where: { code: couponCode.toUpperCase() } })
-      if (coupon && coupon.active && (!coupon.expiryDate || new Date() <= coupon.expiryDate)) {
-        if (!coupon.usageLimit || coupon.usedCount < coupon.usageLimit) {
-          discount = coupon.discountType === 'FLAT'
-            ? coupon.value
-            : (baseTotal * coupon.value) / 100
-          resolvedCouponId = coupon.id
-        }
-      }
-    } else if (couponId) {
-      resolvedCouponId = couponId
+    if (items.length !== menuItemIds.length) {
+      logger.warn('Booking: Invalid menu items', { requested: menuItemIds.length, found: items.length })
+      return res.status(400).json({ error: 'One or more menu items not found or inactive' })
     }
 
-    const gst = (baseTotal - discount) * 0.05
-    const total = baseTotal - discount + gst
+    // Calculate price server-side (no trust on client totalAmount)
+    const pricePerPerson = explicitPricePerPerson || items.reduce((sum, item) => sum + item.price, 0)
+    const baseTotal = pricePerPerson * guestCount
+    const staffCharge = staffCount * STAFF_RATE
+    const packingCost = Math.round(baseTotal * 0.10)
+    const subtotal = baseTotal + packingCost + (addonCost || 0) + deliveryCharge + staffCharge
+
+    // Handle coupon with atomic transaction to prevent race condition
+    let discount = 0
+    let resolvedCouponId = null
+
+    if (couponCode || couponId) {
+      try {
+        const result = await prisma.$transaction(async (tx) => {
+          const coupon = await tx.coupon.findUnique({ 
+            where: { id: couponId || undefined, code: couponCode ? couponCode.toUpperCase() : undefined }
+          })
+
+          if (!coupon || !coupon.active) {
+            return { valid: false, discount: 0, couponId: null }
+          }
+
+          if (coupon.expiryDate && new Date() > coupon.expiryDate) {
+            return { valid: false, discount: 0, couponId: null }
+          }
+
+          if (coupon.usageLimit && coupon.usedCount >= coupon.usageLimit) {
+            logger.warn('Coupon usage limit exceeded', { couponId: coupon.id })
+            return { valid: false, discount: 0, couponId: null }
+          }
+
+          let couponDiscount = 0
+          if (coupon.discountType === 'FLAT') {
+            couponDiscount = coupon.value
+          } else {
+            couponDiscount = (subtotal * coupon.value) / 100
+          }
+
+          // Increment coupon usage atomically
+          await tx.coupon.update({
+            where: { id: coupon.id },
+            data: { usedCount: { increment: 1 } },
+          })
+
+          return { 
+            valid: true, 
+            discount: couponDiscount, 
+            couponId: coupon.id 
+          }
+        })
+
+        if (result.valid) {
+          discount = result.discount
+          resolvedCouponId = result.couponId
+        }
+      } catch (err) {
+        logger.error('Coupon processing error', { couponCode, couponId, error: err.message })
+        // Continue without coupon on error
+      }
+    }
+
+    const gst = Math.round((subtotal - discount) * GST_RATE)
+    const total = subtotal - discount + gst
 
     // Razorpay stub
     const razorpayOrder = {
-      id: `order_${Date.now()}`,
+      id: `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       amount: Math.round(total * 100),
       currency: 'INR',
     }
 
     // Get userId from token if available (optional auth)
-    const authHeader = req.headers['authorization']
     let userId = null
-    if (authHeader && authHeader.startsWith('Bearer ')) {
+    const authHeader = req.headers['authorization']
+    if (authHeader?.startsWith('Bearer ')) {
       try {
         const jwt = require('jsonwebtoken')
         const decoded = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET)
         userId = decoded.id
-      } catch {}
+      } catch (e) {
+        logger.debug('JWT verification failed', { error: e.message })
+      }
     }
+
+    // Sanitize user inputs
+    const sanitized = sanitizeObject({
+      guestName,
+      specialInstructions,
+      venueAddress,
+    }, ['guestName', 'specialInstructions', 'venueAddress'])
 
     // Save booking
     const booking = await prisma.booking.create({
@@ -94,19 +141,19 @@ router.post('/', async (req, res) => {
         guestCount: parseInt(guestCount),
         vegCount: parseInt(vegCount) || 0,
         nonVegCount: parseInt(nonVegCount) || 0,
-        venueAddress: venueAddress || null,
+        venueAddress: sanitized.venueAddress,
         servingStyle: servingStyle || 'BUFFET',
         deliveryType: deliveryType || 'GATE',
         deliveryCharge: parseFloat(deliveryCharge) || 0,
         staffCount: parseInt(staffCount) || 0,
-        staffCharge: (parseInt(staffCount) || 0) * 650,
+        staffCharge,
         addonCharge: parseFloat(addonCost) || 0,
         dietPreference: dietPreference || 'NON_VEG',
         spiceLevel: spiceLevel || 'MEDIUM',
         timeSlot: timeSlot || null,
         paymentPlan: paymentPlan || 'FULL',
-        specialInstructions: specialInstructions || null,
-        guestName: guestName || null,
+        specialInstructions: sanitized.specialInstructions,
+        guestName: sanitized.guestName,
         guestPhone: guestPhone || null,
         guestEmail: guestEmail || null,
         couponId: resolvedCouponId,
@@ -121,16 +168,8 @@ router.post('/', async (req, res) => {
       },
     })
 
-    // Increment coupon usage
-    if (resolvedCouponId) {
-      await prisma.coupon.update({
-        where: { id: resolvedCouponId },
-        data: { usedCount: { increment: 1 } },
-      })
-    }
-
     // Send confirmation emails (non-blocking)
-    const customerName = guestName || 'Customer'
+    const customerName = sanitized.guestName || 'Valued Customer'
     const customerEmail = guestEmail
     const menuList = items.map(i => `• ${i.name} (${i.category.name})`).join('<br/>')
 
@@ -146,7 +185,7 @@ router.post('/', async (req, res) => {
           <tr><td style="padding:10px;font-weight:bold;">Event Type</td><td style="padding:10px;">${eventType}</td></tr>
           <tr style="background:#f9f9f9;"><td style="padding:10px;font-weight:bold;">Event Date</td><td style="padding:10px;">${eventDate}</td></tr>
           <tr><td style="padding:10px;font-weight:bold;">Guests</td><td style="padding:10px;">${guestCount}</td></tr>
-          <tr style="background:#f9f9f9;"><td style="padding:10px;font-weight:bold;">Venue</td><td style="padding:10px;">${venueAddress || 'TBD'}</td></tr>
+          <tr style="background:#f9f9f9;"><td style="padding:10px;font-weight:bold;">Venue</td><td style="padding:10px;">${sanitized.venueAddress || 'TBD'}</td></tr>
           <tr><td style="padding:10px;font-weight:bold;">Time Slot</td><td style="padding:10px;">${timeSlot || 'TBD'}</td></tr>
           <tr style="background:#f9f9f9;"><td style="padding:10px;font-weight:bold;">Delivery</td><td style="padding:10px;">${deliveryType || 'GATE'}</td></tr>
           <tr><td style="padding:10px;font-weight:bold;">Diet Preference</td><td style="padding:10px;">${dietPreference || 'NON_VEG'}</td></tr>
@@ -162,7 +201,7 @@ router.post('/', async (req, res) => {
       to: 'amruthamfoodsvizag@gmail.com',
       subject: `New Booking #${booking.id}: ${eventType} — ${customerName} (${guestCount} guests)`,
       html: adminHtml,
-    }).catch(e => console.error('Admin email error:', e.message))
+    }).catch(e => logger.error('Admin email error', { error: e.message }))
 
     if (customerEmail) {
       transporter.sendMail({
@@ -176,17 +215,18 @@ router.post('/', async (req, res) => {
             <p>Our team will contact you within 24 hours to confirm the details.</p>
             <p style="font-size:13px;color:#666;">📞 +91 86 86 622 722 | +91 98 49 915 468</p>
           </div>`,
-      }).catch(e => console.error('Customer email error:', e.message))
+      }).catch(e => logger.error('Customer email error', { email: customerEmail, error: e.message }))
     }
 
-    res.status(201).json({ bookingId: booking.id, razorpayOrder, total: total.toFixed(0) })
+    logger.info('Booking created successfully', { bookingId: booking.id, guestCount, eventType })
+    res.status(201).json({ bookingId: booking.id, razorpayOrder, total: subtotal.toFixed(0) })
   } catch (err) {
-    console.error('Booking error:', err)
+    logger.error('Booking creation error', { error: err.message, stack: err.stack })
     res.status(500).json({ error: 'Failed to create booking' })
   }
 })
 
-// GET /api/booking/my
+// GET /api/booking/my - List all bookings for current user
 router.get('/my', authMiddleware, async (req, res) => {
   try {
     const bookings = await prisma.booking.findMany({
@@ -197,48 +237,86 @@ router.get('/my', authMiddleware, async (req, res) => {
       },
       orderBy: { createdAt: 'desc' },
     })
+    logger.info('Bookings fetched', { userId: req.user.id, count: bookings.length })
     res.json(bookings)
   } catch (err) {
+    logger.error('Failed to fetch bookings', { userId: req.user.id, error: err.message })
     res.status(500).json({ error: 'Failed to fetch bookings' })
   }
 })
 
-// GET /api/booking/:id
+// GET /api/booking/:id - Get single booking by ID
 router.get('/:id', authMiddleware, async (req, res) => {
   try {
+    const bookingId = parseInt(req.params.id)
+    if (isNaN(bookingId)) {
+      return res.status(400).json({ error: 'Invalid booking ID' })
+    }
     const booking = await prisma.booking.findUnique({
-      where: { id: parseInt(req.params.id) },
+      where: { id: bookingId },
       include: {
         menuItems: { include: { menuItem: { include: { category: true } } } },
         coupon: true,
         user: { select: { name: true, email: true, phone: true } },
       },
     })
-    if (!booking) return res.status(404).json({ error: 'Booking not found' })
+    if (!booking) {
+      logger.warn('Booking not found', { bookingId, userId: req.user.id })
+      return res.status(404).json({ error: 'Booking not found' })
+    }
     if (booking.userId !== req.user.id && req.user.role !== 'ADMIN') {
+      logger.warn('Unauthorized booking access attempt', { bookingId, userId: req.user.id })
       return res.status(403).json({ error: 'Access denied' })
     }
+    logger.info('Booking retrieved', { bookingId, userId: req.user.id })
     res.json(booking)
   } catch (err) {
+    logger.error('Failed to fetch booking', { bookingId: req.params.id, error: err.message })
     res.status(500).json({ error: 'Failed to fetch booking' })
   }
 })
 
-// PATCH /api/booking/:id/cancel
+// PATCH /api/booking/:id/cancel - Cancel a pending booking
 router.patch('/:id/cancel', authMiddleware, async (req, res) => {
   try {
-    const booking = await prisma.booking.findUnique({ where: { id: parseInt(req.params.id) } })
-    if (!booking) return res.status(404).json({ error: 'Booking not found' })
-    if (booking.userId !== req.user.id) return res.status(403).json({ error: 'Access denied' })
-    if (booking.status !== 'PENDING') {
-      return res.status(400).json({ error: 'Only PENDING bookings can be cancelled' })
+    const bookingId = parseInt(req.params.id)
+    if (isNaN(bookingId)) {
+      return res.status(400).json({ error: 'Invalid booking ID' })
     }
+    
+    const booking = await prisma.booking.findUnique({ where: { id: bookingId } })
+    if (!booking) {
+      logger.warn('Cancel attempt on non-existent booking', { bookingId })
+      return res.status(404).json({ error: 'Booking not found' })
+    }
+    
+    if (booking.userId !== req.user.id) {
+      logger.warn('Unauthorized cancel attempt', { bookingId, userId: req.user.id })
+      return res.status(403).json({ error: 'Access denied' })
+    }
+    
+    if (booking.status !== 'PENDING') {
+      logger.warn('Cancel attempt on non-pending booking', { bookingId, status: booking.status })
+      return res.status(400).json({ error: `Only PENDING bookings can be cancelled (current: ${booking.status})` })
+    }
+    
     const updated = await prisma.booking.update({
-      where: { id: booking.id },
+      where: { id: bookingId },
       data: { status: 'CANCELLED' },
     })
+    
+    // If coupon was used, decrement usage count
+    if (updated.couponId) {
+      await prisma.coupon.update({
+        where: { id: updated.couponId },
+        data: { usedCount: { decrement: 1 } },
+      })
+    }
+    
+    logger.info('Booking cancelled', { bookingId, userId: req.user.id })
     res.json(updated)
   } catch (err) {
+    logger.error('Failed to cancel booking', { bookingId: req.params.id, error: err.message })
     res.status(500).json({ error: 'Failed to cancel booking' })
   }
 })

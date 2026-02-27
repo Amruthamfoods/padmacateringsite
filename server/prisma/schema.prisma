@@ -140,6 +140,10 @@ model QuoteRequest {
   createdAt           DateTime     @default(now())
   userId              Int?
   user                User?        @relation(fields: [userId], references: [id])
+
+  @@index([eventDate])
+  @@index([status])
+  @@index([userId])
 }
 
 model Booking {
@@ -179,6 +183,12 @@ model Booking {
   adminNotes          String?
   createdAt           DateTime          @default(now())
   menuItems           BookingMenuItem[]
+
+  @@index([eventDate])
+  @@index([createdAt])
+  @@index([userId])
+  @@index([status])
+  @@index([couponId])
 }
 
 enum ServingStyle {

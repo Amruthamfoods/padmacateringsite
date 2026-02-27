@@ -175,19 +175,31 @@ function TierModal({ packageId, tier, onSave, onClose }) {
   )
 }
 
-function RuleModal({ packageId, rule, categories, onSave, onClose }) {
-  const [form, setForm] = useState(rule || { categoryId: '', label: '', minChoices: 1, maxChoices: '' })
+function RuleModal({ packageId, rule, categories, allItems, onSave, onClose }) {
+  const existingItemIds = rule?.allowedItems?.map(ai => ai.menuItemId) || []
+  const [form, setForm] = useState(rule
+    ? { categoryId: rule.categoryId, label: rule.label, minChoices: rule.minChoices, maxChoices: rule.maxChoices, extraItemPrice: rule.extraItemPrice ?? 0 }
+    : { categoryId: '', label: '', minChoices: 1, maxChoices: '', extraItemPrice: 0 }
+  )
+  const [selectedItemIds, setSelectedItemIds] = useState(existingItemIds)
   const [saving, setSaving] = useState(false)
+
+  const categoryItems = allItems.filter(i => i.categoryId === parseInt(form.categoryId))
+
+  function toggleItem(id) {
+    setSelectedItemIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+  }
 
   async function handleSave() {
     if (!form.categoryId || !form.label || !form.maxChoices) { toast.error('All fields required'); return }
     setSaving(true)
     try {
+      const payload = { ...form, itemIds: selectedItemIds }
       if (rule) {
-        await api.put(`/admin/packages/${packageId}/rules/${rule.id}`, form)
+        await api.put(`/admin/packages/${packageId}/rules/${rule.id}`, payload)
         toast.success('Rule updated')
       } else {
-        await api.post(`/admin/packages/${packageId}/rules`, form)
+        await api.post(`/admin/packages/${packageId}/rules`, payload)
         toast.success('Rule created')
       }
       onSave()
@@ -197,7 +209,7 @@ function RuleModal({ packageId, rule, categories, onSave, onClose }) {
 
   return (
     <div className="modal-overlay">
-      <div className="modal-box" style={{ maxWidth: 380 }}>
+      <div className="modal-box" style={{ maxWidth: 460 }}>
         <div className="modal-header">
           <h3 className="modal-title">{rule ? 'Edit Category Rule' : 'Add Category Rule'}</h3>
           <button className="modal-close" onClick={onClose}><i className="fa-solid fa-xmark" /></button>
@@ -208,7 +220,7 @@ function RuleModal({ packageId, rule, categories, onSave, onClose }) {
         </div>
         <div className="field-block">
           <label className="field-label">Category *</label>
-          <select value={form.categoryId} onChange={e => setForm(f => ({ ...f, categoryId: e.target.value }))} className="booking-input">
+          <select value={form.categoryId} onChange={e => { setForm(f => ({ ...f, categoryId: e.target.value })); setSelectedItemIds([]) }} className="booking-input">
             <option value="">Select…</option>
             {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
@@ -223,7 +235,39 @@ function RuleModal({ packageId, rule, categories, onSave, onClose }) {
             <input type="number" min={1} value={form.maxChoices} onChange={e => setForm(f => ({ ...f, maxChoices: e.target.value }))} className="booking-input" />
           </div>
         </div>
-        <button onClick={handleSave} disabled={saving} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: 16 }}>
+        <div className="field-block">
+          <label className="field-label">Extra Item Price (₹/item beyond max)</label>
+          <input type="number" min={0} placeholder="0 = not allowed" value={form.extraItemPrice} onChange={e => setForm(f => ({ ...f, extraItemPrice: e.target.value }))} className="booking-input" />
+        </div>
+
+        {form.categoryId && (
+          <div className="field-block">
+            <label className="field-label">
+              Allowed Items in this rule
+              <span style={{ color: 'var(--text-faint)', fontWeight: 400, marginLeft: 6 }}>(leave all unchecked = show entire category)</span>
+            </label>
+            {categoryItems.length === 0
+              ? <p style={{ fontSize: '0.78rem', color: 'var(--text-faint)' }}>No items in this category</p>
+              : (
+                <div style={{ maxHeight: 200, overflowY: 'auto', border: '1px solid var(--gold-line)', borderRadius: 8, padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {categoryItems.map(item => (
+                    <label key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', fontSize: '0.82rem', color: 'var(--text-warm)' }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedItemIds.includes(item.id)}
+                        onChange={() => toggleItem(item.id)}
+                      />
+                      <span style={{ flex: 1 }}>{item.name}</span>
+                      <span style={{ fontSize: '0.72rem', color: item.type === 'VEG' ? '#2ea843' : '#c0392b' }}>{item.type}</span>
+                    </label>
+                  ))}
+                </div>
+              )
+            }
+          </div>
+        )}
+
+        <button onClick={handleSave} disabled={saving} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: 4 }}>
           {saving ? <><i className="fa-solid fa-circle-notch fa-spin" /> Saving…</> : <><i className="fa-solid fa-floppy-disk" /> Save Rule</>}
         </button>
       </div>
@@ -231,7 +275,7 @@ function RuleModal({ packageId, rule, categories, onSave, onClose }) {
   )
 }
 
-function PackageEditPanel({ pkg, categories, onReload, onClose }) {
+function PackageEditPanel({ pkg, categories, allItems, onReload, onClose }) {
   const [tierModal, setTierModal] = useState(null) // null | 'add' | tier object
   const [ruleModal, setRuleModal] = useState(null)
 
@@ -305,16 +349,28 @@ function PackageEditPanel({ pkg, categories, onReload, onClose }) {
           <p style={{ fontSize: '0.78rem', color: 'var(--text-faint)' }}>No category rules yet</p>
         ) : (
           (pkg.categoryRules || []).map(rule => (
-            <div key={rule.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', background: 'var(--dark-3)', borderRadius: 8, marginBottom: 6 }}>
-              <div>
-                <p style={{ fontSize: '0.82rem', color: 'var(--white)' }}>{rule.label}</p>
-                <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                  {rule.category?.name} · Pick {rule.minChoices}–{rule.maxChoices}
-                </p>
-              </div>
-              <div style={{ display: 'flex', gap: 4 }}>
-                <button onClick={() => setRuleModal(rule)} className="action-btn edit"><i className="fa-solid fa-pen" /></button>
-                <button onClick={() => deleteRule(rule.id)} className="action-btn del"><i className="fa-solid fa-trash" /></button>
+            <div key={rule.id} style={{ background: 'var(--dark-3)', borderRadius: 8, marginBottom: 6, padding: '8px 10px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: '0.82rem', color: 'var(--white)' }}>{rule.label}</p>
+                  <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                    {rule.category?.name} · Pick {rule.minChoices}–{rule.maxChoices}
+                    {rule.extraItemPrice > 0 && <span style={{ color: 'var(--gold)', marginLeft: 6 }}>+₹{rule.extraItemPrice}/extra</span>}
+                  </p>
+                  {rule.allowedItems?.length > 0 && (
+                    <div style={{ marginTop: 4, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                      {rule.allowedItems.map(ai => (
+                        <span key={ai.menuItemId} style={{ fontSize: '0.68rem', padding: '2px 7px', borderRadius: 10, background: 'rgba(255,255,255,0.06)', color: 'var(--text-muted)' }}>
+                          {ai.menuItem?.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div style={{ display: 'flex', gap: 4, marginLeft: 8 }}>
+                  <button onClick={() => setRuleModal(rule)} className="action-btn edit"><i className="fa-solid fa-pen" /></button>
+                  <button onClick={() => deleteRule(rule.id)} className="action-btn del"><i className="fa-solid fa-trash" /></button>
+                </div>
               </div>
             </div>
           ))
@@ -337,6 +393,7 @@ function PackageEditPanel({ pkg, categories, onReload, onClose }) {
           packageId={pkg.id}
           rule={ruleModal === 'add' ? null : ruleModal}
           categories={categories}
+          allItems={allItems}
           onSave={() => { setRuleModal(null); onReload() }}
           onClose={() => setRuleModal(null)}
         />
@@ -542,6 +599,7 @@ export default function MenuAdminPage() {
         <PackageEditPanel
           pkg={editingPkg}
           categories={categories}
+          allItems={items}
           onReload={load}
           onClose={() => setEditingPkg(null)}
         />
