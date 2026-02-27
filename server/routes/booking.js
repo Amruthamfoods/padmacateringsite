@@ -31,7 +31,7 @@ router.post('/', validate('createBooking'), async (req, res) => {
 
     // Fetch selected items
     const items = await prisma.menuItem.findMany({
-      where: { id: { in: menuItemIds.map(Number), active: true },
+      where: { id: { in: menuItemIds.map(Number) }, active: true },
       include: { category: true },
     })
 

@@ -1,12 +1,15 @@
+import { useLocation } from 'react-router-dom'
+
 const STEPS = [
-  { key: 'event',   label: 'Event Details', icon: 'fa-calendar' },
-  { key: 'menu',    label: 'Select Menu',   icon: 'fa-utensils' },
-  { key: 'price',   label: 'Get Price',     icon: 'fa-tag' },
-  { key: 'payment', label: 'Payment',       icon: 'fa-credit-card' },
+  { path: '/setup',   label: 'Event Setup',    icon: 'fa-calendar' },
+  { path: '/menu',    label: 'Build Menu',     icon: 'fa-utensils' },
+  { path: '/review',  label: 'Review & Price', icon: 'fa-tag' },
+  { path: '/payment', label: 'Payment',        icon: 'fa-credit-card' },
 ]
 
-export default function BookingSteps({ current }) {
-  const currentIdx = STEPS.findIndex(s => s.key === current)
+export default function BookingSteps() {
+  const { pathname } = useLocation()
+  const currentIdx = STEPS.findIndex(s => pathname === s.path || pathname.startsWith(s.path + '/'))
 
   return (
     <div className="booking-steps-bar">
@@ -15,7 +18,7 @@ export default function BookingSteps({ current }) {
           const done   = idx < currentIdx
           const active = idx === currentIdx
           return (
-            <div key={step.key} className="bstep-wrap">
+            <div key={step.path} className="bstep-wrap">
               <div className={`bstep ${active ? 'active' : ''} ${done ? 'done' : ''}`}>
                 <div className="bstep-icon-box">
                   {done

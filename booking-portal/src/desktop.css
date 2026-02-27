@@ -6,33 +6,11 @@
 /* ─── RESET & BASE ─────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-:root {
-  --red:        #C0392B;
-  --red-dark:   #922B21;
-  --red-light:  #FDEDEC;
-  --red-text:   #922B21;
-  --bg:         #FAFAFA;
-  --bg-pink:    #FFF8F8;
-  --surface:    #FFFFFF;
-  --surface-2:  #F5F5F5;
-  --border:     #E5E7EB;
-  --border-light: #F3F4F6;
-  --text-dark:  #111827;
-  --text-body:  #374151;
-  --text-muted: #6B7280;
-  --text-faint: #9CA3AF;
-  --radius:     12px;
-  --radius-lg:  16px;
-  --shadow:     0 1px 4px rgba(0,0,0,0.08);
-  --shadow-md:  0 4px 16px rgba(0,0,0,0.10);
-  --shadow-lg:  0 8px 32px rgba(0,0,0,0.12);
-  --font-body:  'Inter', 'Segoe UI', sans-serif;
-  --font-display: 'Poppins', 'Inter', sans-serif;
-}
+/* Variables are defined in index.css — no duplicate :root here */
 
 body {
   font-family: var(--font-body);
-  background: var(--bg);
+  background: var(--bg-page);
   color: var(--text-body);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
@@ -1418,4 +1396,71 @@ body {
   .site-footer-inner { grid-template-columns: 1fr; }
   .bstep-label-text { display: none; }
   .orders-page-wrap { padding: 24px 16px; }
+}
+
+/* ─── EVENT SETUP PAGE (2-col layout) ───────────────────── */
+.setup-layout {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 28px;
+  align-items: start;
+}
+.setup-pkg-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+
+/* Package card selected state */
+.pkg-card-d.pkg-card-selected {
+  border-color: var(--red);
+  box-shadow: 0 0 0 3px var(--red-light);
+}
+.pkg-card-d-thumb { position: relative; }
+.pkg-selected-overlay {
+  position: absolute; inset: 0;
+  background: rgba(192,57,43,0.80);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2.5rem; color: #fff;
+}
+
+/* ─── FOOD CARD HORIZONTAL SCROLL (DESKTOP) ──────────────── */
+.food-cards-scroll-wrap { position: relative; }
+.food-cards-scroll-wrap::after {
+  content: '';
+  position: absolute;
+  top: 0; right: 0; bottom: 12px;
+  width: 40px;
+  background: linear-gradient(to right, transparent, #fff);
+  pointer-events: none;
+}
+.menu-accordion-body { padding: 0 20px 20px; }
+
+/* ─── SETUP FORM OVERRIDES ─────────────────────────────────  */
+.setup-layout .form-section { margin-bottom: 0; }
+.setup-layout .diet-toggle-bar { display: flex; gap: 8px; }
+.setup-layout .diet-pill { font-size: 0.85rem; }
+
+/* ─── REVIEW PRICE PAGE ─────────────────────────────────── */
+.review-item-name { font-size: 0.92rem; }
+.qty-val { min-width: 64px; font-size: 0.87rem; }
+
+/* ─── BOTTOM BAR (WIDE) ─────────────────────────────────── */
+.booking-bottom-bar .booking-bottom-pkg {
+  font-size: 0.87rem;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+/* ─── MOBILE OVERRIDES FOR NEW COMPONENTS ───────────────── */
+@media (max-width: 960px) {
+  .setup-layout { grid-template-columns: 1fr; }
+}
+@media (max-width: 768px) {
+  .setup-layout { gap: 16px; }
+  .food-cards-scroll-wrap::after { display: none; }
+  .menu-accordion-body { padding: 0 16px 16px; }
 }

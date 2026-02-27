@@ -1,0 +1,150 @@
+{"error":"Authentication failed against database server at `localhost`, the provided database credentials for `postgres` are not valid.\n\nPlease make sure to provide valid database credentials for the database server at `localhost`.","level":"warn","message":"DB not available (run migrations first)","service":"padma-catering-server","timestamp":"2026-02-27 16:02:28"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-02-27 16:02:28"}
+{"error":"Authentication failed against database server at `localhost`, the provided database credentials for `postgres` are not valid.\n\nPlease make sure to provide valid database credentials for the database server at `localhost`.","level":"warn","message":"DB not available (run migrations first)","service":"padma-catering-server","timestamp":"2026-02-27 16:07:47"}
+{"error":"Authentication failed against database server at `localhost`, the provided database credentials for `postgres` are not valid.\n\nPlease make sure to provide valid database credentials for the database server at `localhost`.","level":"warn","message":"DB not available (run migrations first)","service":"padma-catering-server","timestamp":"2026-02-27 16:07:51"}
+{"error":"Authentication failed against database server at `localhost`, the provided database credentials for `postgres` are not valid.\n\nPlease make sure to provide valid database credentials for the database server at `localhost`.","level":"warn","message":"DB not available (run migrations first)","service":"padma-catering-server","timestamp":"2026-02-27 16:07:53"}
+{"error":"Authentication failed against database server at `localhost`, the provided database credentials for `postgres` are not valid.\n\nPlease make sure to provide valid database credentials for the database server at `localhost`.","level":"warn","message":"DB not available (run migrations first)","service":"padma-catering-server","timestamp":"2026-02-27 16:07:55"}
+{"error":"Authentication failed against database server at `localhost`, the provided database credentials for `postgres` are not valid.\n\nPlease make sure to provide valid database credentials for the database server at `localhost`.","level":"warn","message":"DB not available (run migrations first)","service":"padma-catering-server","timestamp":"2026-02-27 16:08:15"}
+{"error":"Authentication failed against database server at `localhost`, the provided database credentials for `postgres` are not valid.\n\nPlease make sure to provide valid database credentials for the database server at `localhost`.","level":"warn","message":"DB not available (run migrations first)","service":"padma-catering-server","timestamp":"2026-02-27 16:08:16"}
+{"error":"Authentication failed against database server at `localhost`, the provided database credentials for `postgres` are not valid.\n\nPlease make sure to provide valid database credentials for the database server at `localhost`.","level":"warn","message":"DB not available (run migrations first)","service":"padma-catering-server","timestamp":"2026-02-27 16:08:17"}
+{"error":"Authentication failed against database server at `localhost`, the provided database credentials for `postgres` are not valid.\n\nPlease make sure to provide valid database credentials for the database server at `localhost`.","level":"warn","message":"DB not available (run migrations first)","service":"padma-catering-server","timestamp":"2026-02-27 16:08:24"}
+{"error":"Authentication failed against database server at `localhost`, the provided database credentials for `postgres` are not valid.\n\nPlease make sure to provide valid database credentials for the database server at `localhost`.","level":"warn","message":"DB not available (run migrations first)","service":"padma-catering-server","timestamp":"2026-02-27 16:08:38"}
+{"error":"Authentication failed against database server at `localhost`, the provided database credentials for `postgres` are not valid.\n\nPlease make sure to provide valid database credentials for the database server at `localhost`.","level":"warn","message":"DB not available (run migrations first)","service":"padma-catering-server","timestamp":"2026-02-27 16:08:40"}
+{"error":"Authentication failed against database server at `localhost`, the provided database credentials for `postgres` are not valid.\n\nPlease make sure to provide valid database credentials for the database server at `localhost`.","level":"warn","message":"DB not available (run migrations first)","service":"padma-catering-server","timestamp":"2026-02-27 16:08:48"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:09:04"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:09:15"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:09:20"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:09:23"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:09:24"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:09:24"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:09:25"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:09:32"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:09:59"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:10:06"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:10:20"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:10:23"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:10:32"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:10:50"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:10:57"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:10:58"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:11:00"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:11:02"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:11:02"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:11:03"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:11:05"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:12:12"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:12:13"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:12:14"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:12:14"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:12:26"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:12:53"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:13:19"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:13:23"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:13:24"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:13:25"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:13:40"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:13:40"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:13:41"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:14:14"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:15:52"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:16:08"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:16:11"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:16:19"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:16:21"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:16:26"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:22:50"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-02-27 16:22:50"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:22:51"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-02-27 16:22:51"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:23:02"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-02-27 16:23:02"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:23:03"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-02-27 16:23:03"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:23:03"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-02-27 16:23:03"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:23:12"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-02-27 16:23:12"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:23:15"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-02-27 16:23:15"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:23:21"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-02-27 16:23:21"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:23:22"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-02-27 16:23:22"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:23:23"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-02-27 16:23:23"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:24:00"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-02-27 16:24:00"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:37:40"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-02-27 16:37:40"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:37:40"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-02-27 16:37:40"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:37:50"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-02-27 16:37:50"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:39:23"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:39:31"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-02-27 16:39:31"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:39:31"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:39:33"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:39:33"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-02-27 16:39:33"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:39:43"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-02-27 16:39:43"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:39:43"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:39:43"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-02-27 16:39:43"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:39:43"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:39:45"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:39:45"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-02-27 16:39:45"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:39:46"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-02-27 16:39:46"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:39:47"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:39:47"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-02-27 16:39:47"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:40:33"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-02-27 16:40:33"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:40:33"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:40:34"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-02-27 16:40:34"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:40:34"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:40:57"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-02-27 16:40:57"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:40:57"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:41:00"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-02-27 16:41:00"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:41:00"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:41:09"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-02-27 16:41:09"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:41:09"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:42:05"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:42:05"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-02-27 16:42:05"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:42:40"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:42:40"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-02-27 16:42:40"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:42:45"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-02-27 16:42:45"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:42:45"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:42:55"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:42:55"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-02-27 16:42:55"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:43:14"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-02-27 16:43:14"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:43:14"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:43:19"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-02-27 16:43:19"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:43:19"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:43:25"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-02-27 16:43:25"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:43:25"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:43:33"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-02-27 16:43:33"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:43:33"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:43:35"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-02-27 16:43:35"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 16:43:35"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 17:36:00"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-02-27 17:36:00"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 17:36:00"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-02-27 17:36:00"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 17:36:01"}

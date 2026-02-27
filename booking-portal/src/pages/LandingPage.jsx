@@ -100,8 +100,7 @@ export default function LandingPage() {
       toast('Coming soon! Call us to book this service.', { icon: '🔔' })
       return
     }
-    sessionStorage.setItem('bookingService', svc.id)
-    navigate('/packages')
+    navigate('/setup')
   }
 
   const s = SLIDES[slide]
@@ -127,7 +126,7 @@ export default function LandingPage() {
                 <button
                   className="banner-cta"
                   style={{ background: sl.accent }}
-                  onClick={() => { sessionStorage.setItem('bookingService', 'catering'); navigate('/packages') }}
+                  onClick={() => { navigate('/setup') }}
                 >
                   {sl.cta} <i className="fa-solid fa-arrow-right" style={{ fontSize: '0.85rem' }} />
                 </button>
@@ -238,7 +237,7 @@ export default function LandingPage() {
 
           <div style={{ textAlign: 'center', marginTop: 40 }}>
             <Link
-              to="/packages"
+              to="/setup"
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 8,
                 padding: '14px 36px', borderRadius: 50,
@@ -246,7 +245,7 @@ export default function LandingPage() {
                 fontWeight: 700, fontSize: '1rem',
                 textDecoration: 'none',
               }}
-              onClick={() => sessionStorage.setItem('bookingService', 'catering')}
+              onClick={() => {}}
             >
               Start Your Booking <i className="fa-solid fa-arrow-right" />
             </Link>
@@ -299,9 +298,9 @@ export default function LandingPage() {
             <i className="fa-solid fa-phone" /> +91 86866 22722
           </a>
           <Link
-            to="/packages"
+            to="/setup"
             style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '13px 28px', borderRadius: 50, background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.5)', color: '#fff', fontWeight: 700, fontSize: '0.97rem', textDecoration: 'none' }}
-            onClick={() => sessionStorage.setItem('bookingService', 'catering')}
+            onClick={() => {}}
           >
             <i className="fa-solid fa-calendar-check" /> Book Online
           </Link>
@@ -335,7 +334,7 @@ export default function LandingPage() {
 
           <div className="footer-col">
             <h5>Services</h5>
-            <a href="#" onClick={e => { e.preventDefault(); sessionStorage.setItem('bookingService','catering'); navigate('/packages') }}>Full Catering</a>
+            <a href="#" onClick={e => { e.preventDefault(); navigate('/setup') }}>Full Catering</a>
             <a href="#">Individual Packs (Soon)</a>
             <a href="#">Delivery Box (Soon)</a>
             <a href="#">Corporate Catering</a>
@@ -352,7 +351,7 @@ export default function LandingPage() {
 
           <div className="footer-col">
             <h5>Quick Links</h5>
-            <Link to="/packages" style={{ display: 'block', fontSize: '0.88rem', color: 'rgba(255,255,255,0.70)', textDecoration: 'none', marginBottom: 10 }}>Browse Packages</Link>
+            <Link to="/setup" style={{ display: 'block', fontSize: '0.88rem', color: 'rgba(255,255,255,0.70)', textDecoration: 'none', marginBottom: 10 }}>Browse Packages</Link>
             <Link to="/login" style={{ display: 'block', fontSize: '0.88rem', color: 'rgba(255,255,255,0.70)', textDecoration: 'none', marginBottom: 10 }}>My Orders</Link>
             <a href="https://padmacatering.com">Main Website</a>
             <a href="tel:+918686622722">Call Us</a>

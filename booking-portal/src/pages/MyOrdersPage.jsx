@@ -53,8 +53,7 @@ export default function MyOrdersPage() {
             </h1>
             {user && <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>Welcome back, {user.name}</p>}
           </div>
-          <Link to="/packages" className="btn-primary" style={{ textDecoration: 'none' }}
-            onClick={() => sessionStorage.setItem('bookingService', 'catering')}>
+          <Link to="/setup" className="btn-primary" style={{ textDecoration: 'none' }}>
             <i className="fa-solid fa-plus" /> New Booking
           </Link>
         </div>
@@ -68,8 +67,7 @@ export default function MyOrdersPage() {
             <div style={{ fontSize: '3rem', marginBottom: 16 }}>📋</div>
             <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-dark)', marginBottom: 8 }}>No bookings yet</h3>
             <p style={{ color: 'var(--text-muted)', marginBottom: 24, fontSize: '0.9rem' }}>Your booking history will appear here.</p>
-            <Link to="/packages" className="btn-primary" style={{ textDecoration: 'none' }}
-              onClick={() => sessionStorage.setItem('bookingService', 'catering')}>
+            <Link to="/setup" className="btn-primary" style={{ textDecoration: 'none' }}>
               Make Your First Booking
             </Link>
           </div>

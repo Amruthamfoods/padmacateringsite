@@ -49,14 +49,14 @@ export default function Header() {
         {/* Nav */}
         <nav className="site-nav">
           <Link to="/">Home</Link>
-          <Link to="/packages">Packages</Link>
+          <Link to="/setup">Packages</Link>
           <a href="https://padmacatering.com/#about">About Us</a>
           <a href="tel:+918686622722">Contact</a>
         </nav>
 
         {/* Actions */}
         <div className="site-header-actions">
-          <Link to="/packages" className="btn-book-now">
+          <Link to="/setup" className="btn-book-now">
             Book Now <i className="fa-solid fa-arrow-right" style={{ fontSize: '0.8rem' }} />
           </Link>
 

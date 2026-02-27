@@ -136,7 +136,7 @@ export default function LoginPage() {
         <div className="auth-divider"><span>or</span></div>
 
         <div style={{ textAlign: 'center' }}>
-          <Link to="/packages" style={{ color: 'var(--red)', fontWeight: 600, fontSize: '0.88rem', textDecoration: 'none' }}>
+          <Link to="/setup" style={{ color: 'var(--red)', fontWeight: 600, fontSize: '0.88rem', textDecoration: 'none' }}>
             <i className="fa-solid fa-arrow-left" style={{ marginRight: 4 }} />
             Continue as Guest
           </Link>
