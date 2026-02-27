@@ -93,7 +93,7 @@ export default function BookingsAdminPage() {
                 {bookings.map(b => (
                   <tr key={b.id}>
                     <td className="id-cell">#{b.id}</td>
-                    <td>{b.user?.name || '—'}</td>
+                    <td>{b.user?.name || b.guestName || '—'}</td>
                     <td>{b.eventType}</td>
                     <td style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>{b.eventDate ? format(new Date(b.eventDate), 'dd MMM yyyy') : '—'}</td>
                     <td>{b.guestCount}</td>
@@ -124,7 +124,7 @@ export default function BookingsAdminPage() {
             <div className="modal-header">
               <div>
                 <p style={{ fontSize: '0.7rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--gold)', marginBottom: 4 }}>Booking #{selected.id}</p>
-                <h3 className="modal-title">{selected.eventType} — {selected.user?.name || 'Guest'}</h3>
+                <h3 className="modal-title">{selected.eventType} — {selected.user?.name || selected.guestName || 'Guest'}</h3>
               </div>
               <button className="modal-close" onClick={() => setSelected(null)}><i className="fa-solid fa-xmark" /></button>
             </div>
@@ -133,7 +133,8 @@ export default function BookingsAdminPage() {
               ['Date', selected.eventDate ? format(new Date(selected.eventDate), 'dd MMM yyyy') : '—'],
               ['Guests', selected.guestCount],
               ['Venue', selected.venueAddress || '—'],
-              ['Phone', selected.user?.phone || '—'],
+              ['Phone', selected.user?.phone || selected.guestPhone || '—'],
+              ['Email', selected.user?.email || selected.guestEmail || '—'],
               ['Total', `₹${Number(selected.total).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`],
             ].map(([lbl, val]) => (
               <div key={lbl} className="summary-row">

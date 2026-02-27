@@ -171,6 +171,9 @@ model Booking {
   discount            Float             @default(0)
   gst                 Float             @default(0)
   total               Float             @default(0)
+  guestName           String?
+  guestPhone          String?
+  guestEmail          String?
   razorpayOrderId     String?
   razorpayPaymentId   String?
   adminNotes          String?
