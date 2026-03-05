@@ -88,7 +88,7 @@ echo.
 echo   🏠 Main Site:        http://localhost:5173/padmacateringsite/
 echo   📅 Booking Portal:   http://localhost:5174/booking/
 echo   🔧 API:              http://localhost:3001/api
-echo   👨‍💼 Admin Panel:      http://localhost:5173/padmacateringsite/admin/
+echo   👨‍💼 Admin Panel:      http://localhost:5173/admin
 echo.
 echo 🔑 Admin Credentials:
 echo   Email: admin@padmacatering.com

@@ -1,6 +1,7 @@
 const router = require('express').Router()
 const multer = require('multer')
 const { PrismaClient } = require('@prisma/client')
+const xlsx = require('xlsx')
 const authMiddleware = require('../middleware/auth')
 const adminOnly = require('../middleware/adminOnly')
 
@@ -43,16 +44,19 @@ router.get('/bookings', async (req, res) => {
     const { status, from, to, eventType, page = 1, limit = 20 } = req.query
     const where = {}
     if (status) where.status = status
-    if (eventType) where.eventType = eventType
+    const baseWhere = {}
+    if (eventType) baseWhere.eventType = eventType
     if (from || to) {
-      where.eventDate = {}
-      if (from) where.eventDate.gte = new Date(from)
-      if (to) where.eventDate.lte = new Date(to)
+      baseWhere.eventDate = {}
+      if (from) baseWhere.eventDate.gte = new Date(from)
+      if (to) baseWhere.eventDate.lte = new Date(to)
     }
+    const finalWhere = { ...baseWhere, ...where }
+
     const skip = (parseInt(page) - 1) * parseInt(limit)
-    const [bookings, count] = await Promise.all([
+    const [bookings, count, statusCountsGroup] = await Promise.all([
       prisma.booking.findMany({
-        where,
+        where: finalWhere,
         include: {
           user: { select: { name: true, email: true, phone: true } },
           menuItems: { include: { menuItem: { select: { name: true } } } },
@@ -62,9 +66,19 @@ router.get('/bookings', async (req, res) => {
         skip,
         take: parseInt(limit),
       }),
-      prisma.booking.count({ where }),
+      prisma.booking.count({ where: finalWhere }),
+      prisma.booking.groupBy({
+        by: ['status'],
+        where: baseWhere,
+        _count: { status: true }
+      })
     ])
-    res.json({ bookings, total: count, page: parseInt(page), pages: Math.ceil(count / parseInt(limit)) })
+
+    const statusCounts = { PENDING: 0, CONFIRMED: 0, COMPLETED: 0, CANCELLED: 0 }
+    statusCountsGroup.forEach(g => { statusCounts[g.status] = g._count.status })
+    statusCounts.ALL = Object.values(statusCounts).reduce((a, b) => a + b, 0)
+
+    res.json({ bookings, total: count, page: parseInt(page), pages: Math.ceil(count / parseInt(limit)), statusCounts })
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch bookings' })
   }
@@ -137,8 +151,14 @@ router.get('/blocked-dates', async (req, res) => {
 
 router.post('/blocked-dates', async (req, res) => {
   try {
-    const { date, reason } = req.body
-    const blocked = await prisma.blockedDate.create({ data: { date: new Date(date), reason: reason || null } })
+    const { date, reason, blockedSlots } = req.body
+    const blocked = await prisma.blockedDate.create({
+      data: {
+        date: new Date(date),
+        reason: reason || null,
+        blockedSlots: Array.isArray(blockedSlots) ? blockedSlots : []
+      }
+    })
     res.status(201).json(blocked)
   } catch (err) {
     res.status(500).json({ error: 'Failed to block date' })
@@ -206,6 +226,94 @@ router.delete('/coupons/:id', async (req, res) => {
     res.json({ success: true })
   } catch (err) {
     res.status(500).json({ error: 'Failed to delete coupon' })
+  }
+})
+
+// Menu - Categories
+router.get('/menu/categories', async (req, res) => {
+  try {
+    const categories = await prisma.menuCategory.findMany({
+      orderBy: { sortOrder: 'asc' },
+    })
+    res.json(categories)
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch categories for admin' })
+  }
+})
+
+router.post('/menu/categories', async (req, res) => {
+  try {
+    const { name, sortOrder, active } = req.body
+    const category = await prisma.menuCategory.create({
+      data: {
+        name,
+        sortOrder: parseInt(sortOrder || 0),
+        active: active !== false,
+      },
+    })
+    res.status(201).json(category)
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to create category' })
+  }
+})
+
+router.put('/menu/categories/:id', async (req, res) => {
+  try {
+    const { name, sortOrder, active } = req.body
+    const data = {}
+    if (name) data.name = name
+    if (sortOrder !== undefined) data.sortOrder = parseInt(sortOrder)
+    if (active !== undefined) data.active = active
+    const category = await prisma.menuCategory.update({
+      where: { id: parseInt(req.params.id) },
+      data,
+    })
+    res.json(category)
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update category' })
+  }
+})
+
+router.delete('/menu/categories/:id', async (req, res) => {
+  try {
+    const categoryId = parseInt(req.params.id)
+
+    // Ensure we don't delete if it's the only category, or just create "Uncategorized"
+    let fallbackCategory = await prisma.menuCategory.findFirst({
+      where: { name: 'Uncategorized' },
+    })
+
+    if (!fallbackCategory) {
+      fallbackCategory = await prisma.menuCategory.create({
+        data: { name: 'Uncategorized', sortOrder: 999, active: false },
+      })
+    }
+
+    // If the category being deleted IS the Uncategorized bin, prevent deletion unless empty
+    if (categoryId === fallbackCategory.id) {
+      const count = await prisma.menuItem.count({ where: { categoryId } })
+      if (count > 0) return res.status(400).json({ error: 'Cannot delete Uncategorized bin while it contains items.' })
+    }
+
+    // Move all items to Uncategorized
+    if (categoryId !== fallbackCategory.id) {
+      await prisma.menuItem.updateMany({
+        where: { categoryId },
+        data: { categoryId: fallbackCategory.id },
+      })
+
+      // Also update package rules
+      await prisma.packageCategoryRule.updateMany({
+        where: { categoryId },
+        data: { categoryId: fallbackCategory.id },
+      })
+    }
+
+    await prisma.menuCategory.delete({ where: { id: categoryId } })
+    res.json({ success: true, fallbackCategoryId: fallbackCategory.id })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Failed to delete category' })
   }
 })
 
@@ -292,12 +400,13 @@ router.get('/menu/packages', async (req, res) => {
 
 router.post('/menu/packages', async (req, res) => {
   try {
-    const { name, eventType, style, type, servesMin, description, basePrice, itemIds } = req.body
+    const { name, eventType, style, type, servesMin, description, basePrice, mealTypes, itemIds } = req.body
     const pkg = await prisma.menuPackage.create({
       data: {
         name, eventType: eventType || null, style: style || 'ANDHRA', type: type || 'VEG',
         servesMin: parseInt(servesMin || 50), description: description || null,
         basePrice: parseFloat(basePrice || 0),
+        mealTypes: Array.isArray(mealTypes) ? mealTypes : ["Breakfast", "Lunch", "Snacks", "Dinner"],
         items: itemIds ? { create: itemIds.map(id => ({ menuItemId: parseInt(id) })) } : undefined,
       },
       include: { items: { include: { menuItem: true } } },
@@ -310,7 +419,7 @@ router.post('/menu/packages', async (req, res) => {
 
 router.put('/menu/packages/:id', async (req, res) => {
   try {
-    const { name, eventType, style, type, servesMin, description, basePrice } = req.body
+    const { name, eventType, style, type, servesMin, description, basePrice, mealTypes } = req.body
     const data = {}
     if (name) data.name = name
     if (eventType !== undefined) data.eventType = eventType
@@ -319,6 +428,7 @@ router.put('/menu/packages/:id', async (req, res) => {
     if (servesMin) data.servesMin = parseInt(servesMin)
     if (description !== undefined) data.description = description
     if (basePrice !== undefined) data.basePrice = parseFloat(basePrice)
+    if (mealTypes !== undefined && Array.isArray(mealTypes)) data.mealTypes = mealTypes
     const pkg = await prisma.menuPackage.update({
       where: { id: parseInt(req.params.id) }, data,
       include: { items: { include: { menuItem: true } } },
@@ -387,7 +497,7 @@ router.post('/packages/:id/rules', async (req, res) => {
     const rule = await prisma.packageCategoryRule.create({
       data: {
         packageId: parseInt(req.params.id),
-        categoryId: parseInt(categoryId),
+        categoryId: categoryId ? parseInt(categoryId) : null,
         label,
         minChoices: parseInt(minChoices || 1),
         maxChoices: parseInt(maxChoices),
@@ -412,7 +522,7 @@ router.put('/packages/:id/rules/:ruleId', async (req, res) => {
     const { categoryId, label, minChoices, maxChoices, extraItemPrice, itemIds } = req.body
     const ruleId = parseInt(req.params.ruleId)
     const data = {}
-    if (categoryId !== undefined) data.categoryId = parseInt(categoryId)
+    if (categoryId !== undefined) data.categoryId = categoryId ? parseInt(categoryId) : null
     if (label !== undefined) data.label = label
     if (minChoices !== undefined) data.minChoices = parseInt(minChoices)
     if (maxChoices !== undefined) data.maxChoices = parseInt(maxChoices)
@@ -487,14 +597,14 @@ router.patch('/quotes/:id', async (req, res) => {
   }
 })
 
-// POST /api/admin/menu/import (CSV)
+// POST /api/admin/menu/import (Excel)
 router.post('/menu/import', upload.single('file'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' })
-    const csv = req.file.buffer.toString('utf-8')
-    const lines = csv.split('\n').filter(l => l.trim())
-    const headers = lines[0].split(',').map(h => h.trim().toLowerCase())
-    const rows = lines.slice(1)
+    const workbook = xlsx.read(req.file.buffer, { type: 'buffer' })
+    const sheetName = workbook.SheetNames[0]
+    const sheet = workbook.Sheets[sheetName]
+    const data = xlsx.utils.sheet_to_json(sheet)
 
     // Get category map
     const categories = await prisma.menuCategory.findMany()
@@ -502,30 +612,71 @@ router.post('/menu/import', upload.single('file'), async (req, res) => {
     categories.forEach(c => { catMap[c.name.toLowerCase()] = c.id })
 
     let created = 0
-    for (const row of rows) {
-      const cols = row.split(',').map(c => c.trim().replace(/^"|"$/g, ''))
-      const obj = {}
-      headers.forEach((h, i) => { obj[h] = cols[i] })
-      const categoryId = catMap[obj.category?.toLowerCase()] || categories[0]?.id
-      if (!categoryId || !obj.name) continue
+    for (const row of data) {
+      if (!row.Name) continue
+
+      const categoryId = catMap[row.Category?.toLowerCase()] || categories[0]?.id
+      if (!categoryId) continue
+
+      let active = true;
+      if (row.Active !== undefined) {
+        active = String(row.Active).toLowerCase() === 'true';
+      }
+
       await prisma.menuItem.upsert({
-        where: { id: parseInt(obj.id || 0) || 0 },
+        where: { id: parseInt(row.ID) || -1 },
         create: {
-          name: obj.name, description: obj.description || null,
-          categoryId, style: obj.style?.toUpperCase() || 'ANDHRA',
-          type: obj.type?.toUpperCase() || 'VEG', price: parseFloat(obj.price || 0),
+          name: row.Name, description: row.Description || null,
+          categoryId, style: row.Style?.toUpperCase() || 'ANDHRA',
+          type: row.Type?.toUpperCase() || 'VEG', price: parseFloat(row.Price || 0),
+          active
         },
         update: {
-          name: obj.name, description: obj.description || null,
-          categoryId, price: parseFloat(obj.price || 0),
+          name: row.Name, description: row.Description || null,
+          categoryId, price: parseFloat(row.Price || 0),
+          active
         },
-      }).catch(() => {})
+      }).catch(() => { })
       created++
     }
     res.json({ success: true, imported: created })
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: 'Import failed' })
+  }
+})
+
+// GET /api/admin/menu/export (Excel)
+router.get('/menu/export', async (req, res) => {
+  try {
+    const items = await prisma.menuItem.findMany({
+      include: { category: true },
+      orderBy: [{ categoryId: 'asc' }, { name: 'asc' }],
+    })
+
+    const data = items.map(item => ({
+      ID: item.id,
+      Name: item.name,
+      Description: item.description || '',
+      Category: item.category?.name || 'Uncategorized',
+      Style: item.style,
+      Type: item.type,
+      Price: item.price,
+      Active: item.active
+    }))
+
+    const worksheet = xlsx.utils.json_to_sheet(data)
+    const workbook = xlsx.utils.book_new()
+    xlsx.utils.book_append_sheet(workbook, worksheet, 'MenuItems')
+
+    const buffer = xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' })
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    res.setHeader('Content-Disposition', 'attachment; filename=menu_items.xlsx')
+    res.send(buffer)
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Export failed' })
   }
 })
 

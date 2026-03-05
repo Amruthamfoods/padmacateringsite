@@ -9,8 +9,8 @@ import { persist } from 'zustand/middleware'
 export const useBookingStore = create(
   persist(
     (set, get) => ({
-      // Step 1: Event Details (includes diet preference now)
       eventDetails: {
+        city: '',
         occasion: '',
         eventDate: '',
         timeSlot: '',
@@ -29,6 +29,7 @@ export const useBookingStore = create(
       // Step 2: Menu Preferences
       menuPreferences: {
         selectedPackage: null,
+        servicePreference: 'NinjaBox', // 'NinjaBox' or 'NinjaBuffet'
         dietPreference: 'NON_VEG',  // kept for backwards compat
         menuItems: [],               // { id, name, categoryId, categoryName, type, quantity, unit, ruleId, extraCharge }
         addons: {},
@@ -96,6 +97,7 @@ export const useBookingStore = create(
       resetBooking: () =>
         set({
           eventDetails: {
+            city: '',
             occasion: '',
             eventDate: '',
             timeSlot: '',
@@ -112,6 +114,7 @@ export const useBookingStore = create(
           },
           menuPreferences: {
             selectedPackage: null,
+            servicePreference: 'NinjaBox',
             dietPreference: 'NON_VEG',
             menuItems: [],
             addons: {},
@@ -141,40 +144,42 @@ export const useBookingStore = create(
       getBookingPayload: () => {
         const state = get()
         return {
-          eventType:           state.eventDetails.occasion,
-          eventDate:           state.eventDetails.eventDate,
-          timeSlot:            state.eventDetails.timeSlot,
-          guestCount:          state.eventDetails.guestCount,
-          vegCount:            state.eventDetails.vegCount,
-          nonVegCount:         state.eventDetails.nonVegCount,
-          venueAddress:        state.eventDetails.venueAddress,
-          deliveryType:        state.eventDetails.deliveryType,
-          deliveryCharge:      state.eventDetails.deliveryCharge,
-          staffCount:          state.eventDetails.staffCount,
-          addonCost:           state.pricing.addonCost,
-          dietPreference:      state.eventDetails.dietPreference,
-          spiceLevel:          state.eventDetails.spiceLevel,
+          city: state.eventDetails.city,
+          eventType: state.eventDetails.occasion,
+          eventDate: state.eventDetails.eventDate,
+          timeSlot: state.eventDetails.timeSlot,
+          guestCount: state.eventDetails.guestCount,
+          vegCount: state.eventDetails.vegCount,
+          nonVegCount: state.eventDetails.nonVegCount,
+          venueAddress: state.eventDetails.venueAddress,
+          deliveryType: state.eventDetails.deliveryType,
+          servicePreference: state.menuPreferences.servicePreference,
+          deliveryCharge: state.eventDetails.deliveryCharge,
+          staffCount: state.eventDetails.staffCount,
+          addonCost: state.pricing.addonCost,
+          dietPreference: state.eventDetails.dietPreference,
+          spiceLevel: state.eventDetails.spiceLevel,
           specialInstructions: state.eventDetails.specialInstructions,
-          menuItemIds:         state.menuPreferences.menuItems.map((i) => i.id),
-          packageId:           state.menuPreferences.selectedPackage?.id,
-          pricePerPerson:      state.pricing.pricePerPerson,
-          guestName:           state.guestInfo.name,
-          guestEmail:          state.guestInfo.email,
-          guestPhone:          state.guestInfo.phone,
-          coupon:              state.pricing.coupon,
-          paymentPlan:         state.paymentPlan,
-          totalAmount:         state.pricing.total,
+          menuItemIds: state.menuPreferences.menuItems.map((i) => i.id),
+          packageId: state.menuPreferences.selectedPackage?.id,
+          pricePerPerson: state.pricing.pricePerPerson,
+          guestName: state.guestInfo.name,
+          guestEmail: state.guestInfo.email,
+          guestPhone: state.guestInfo.phone,
+          coupon: state.pricing.coupon,
+          paymentPlan: state.paymentPlan,
+          totalAmount: state.pricing.total,
         }
       },
     }),
     {
       name: 'padma-booking-store',
       partialize: (state) => ({
-        eventDetails:    state.eventDetails,
+        eventDetails: state.eventDetails,
         menuPreferences: state.menuPreferences,
-        pricing:         state.pricing,
-        guestInfo:       state.guestInfo,
-        paymentPlan:     state.paymentPlan,
+        pricing: state.pricing,
+        guestInfo: state.guestInfo,
+        paymentPlan: state.paymentPlan,
       }),
     }
   )

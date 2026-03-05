@@ -44,6 +44,8 @@ model MenuItem {
   type        DietType          @default(VEG)
   active      Boolean           @default(true)
   price       Float             @default(0)
+  servingSize Float?
+  servingUnit String?
   packages       MenuPackageItem[]
   bookings       BookingMenuItem[]
   allowedInRules PackageCategoryRuleItem[]
@@ -70,6 +72,7 @@ model MenuPackage {
   servesMin     Int                   @default(50)
   description   String?
   basePrice     Float                 @default(0)
+  mealTypes     String[]              @default(["Lunch", "Dinner"])
   items         MenuPackageItem[]
   pricingTiers  PackagePricingTier[]
   categoryRules PackageCategoryRule[]
@@ -88,8 +91,8 @@ model PackageCategoryRule {
   id             Int                       @id @default(autoincrement())
   packageId      Int
   package        MenuPackage               @relation(fields: [packageId], references: [id], onDelete: Cascade)
-  categoryId     Int
-  category       MenuCategory              @relation(fields: [categoryId], references: [id])
+  categoryId     Int?
+  category       MenuCategory?             @relation(fields: [categoryId], references: [id])
   label          String
   minChoices     Int                       @default(1)
   maxChoices     Int
@@ -255,7 +258,8 @@ enum DiscountType {
 }
 
 model BlockedDate {
-  id     Int      @id @default(autoincrement())
-  date   DateTime @unique
-  reason String?
+  id           Int      @id @default(autoincrement())
+  date         DateTime @unique
+  reason       String?
+  blockedSlots String[] @default([]) // Empty means whole day blocked
 }

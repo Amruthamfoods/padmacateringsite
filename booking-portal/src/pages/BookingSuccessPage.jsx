@@ -52,9 +52,9 @@ export default function BookingSuccessPage() {
           <Link to="/" style={{ flex: 1, padding: '13px', borderRadius: 50, background: 'var(--red)', color: '#fff', fontWeight: 700, fontSize: '0.92rem', textAlign: 'center', display: 'block', textDecoration: 'none' }}>
             Book Another Event
           </Link>
-          <a href="https://padmacatering.com" style={{ flex: 1, padding: '13px', borderRadius: 50, border: '1.5px solid var(--border)', color: 'var(--text-dark)', fontWeight: 600, fontSize: '0.92rem', textAlign: 'center', display: 'block', textDecoration: 'none' }}>
-            Back to Site
-          </a>
+          <Link to="/" style={{ flex: 1, padding: '13px', borderRadius: 50, border: '1.5px solid var(--border)', color: 'var(--text-dark)', fontWeight: 600, fontSize: '0.92rem', textAlign: 'center', display: 'block', textDecoration: 'none' }}>
+            Back to Home
+          </Link>
         </div>
 
         <p style={{ marginTop: 24, fontSize: '0.78rem', color: 'var(--text-faint)' }}>

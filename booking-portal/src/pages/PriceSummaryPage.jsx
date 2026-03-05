@@ -8,9 +8,9 @@ const DELIVERY_LABELS = { GATE: 'Gate Delivery', DOORSTEP: 'Doorstep', DOORSTEP_
 
 export default function PriceSummaryPage() {
   const navigate = useNavigate()
-  const [step1, setStep1]   = useState(null)
-  const [step2, setStep2]   = useState(null)
-  const [pkg, setPkg]       = useState(null)
+  const [step1, setStep1] = useState(null)
+  const [step2, setStep2] = useState(null)
+  const [pkg, setPkg] = useState(null)
   const [couponCode, setCouponCode] = useState('')
   const [couponData, setCouponData] = useState(null)
   const [couponLoading, setCouponLoading] = useState(false)
@@ -28,17 +28,17 @@ export default function PriceSummaryPage() {
 
   const pb = useMemo(() => {
     if (!step1 || !step2) return null
-    const tierPrice    = step2.tierPrice || 0
-    const guestCount   = step1.guestCount || 0
+    const tierPrice = step2.tierPrice || 0
+    const guestCount = step1.guestCount || 0
     const baseFoodCost = tierPrice * guestCount
-    const packingCost  = Math.round(tierPrice * 0.10 * guestCount)
-    const addonCost    = step2.addonCost || 0
+    const packingCost = Math.round(tierPrice * 0.10 * guestCount)
+    const addonCost = step2.addonCost || 0
     const deliveryCost = step1.deliveryCharge || 0
-    const staffCost    = (step1.staffCount || 0) * 650
-    const subtotal     = baseFoodCost + packingCost + addonCost + deliveryCost + staffCost
-    const discount     = couponData?.discount || 0
-    const gst          = Math.round((subtotal - discount) * 0.05)
-    const total        = subtotal - discount + gst
+    const staffCost = (step1.staffCount || 0) * 650
+    const subtotal = baseFoodCost + packingCost + addonCost + deliveryCost + staffCost
+    const discount = couponData?.discount || 0
+    const gst = Math.round((subtotal - discount) * 0.05)
+    const total = subtotal - discount + gst
     return { tierPrice, guestCount, baseFoodCost, packingCost, addonCost, deliveryCost, staffCost, subtotal, discount, gst, total }
   }, [step1, step2, couponData])
 
@@ -56,11 +56,11 @@ export default function PriceSummaryPage() {
   if (!step1 || !step2 || !pb) return null
 
   const grouped = {}
-  ;(step2.items || []).forEach(item => {
-    const cat = item.category || 'Other'
-    if (!grouped[cat]) grouped[cat] = []
-    grouped[cat].push(item)
-  })
+    ; (step2.items || []).forEach(item => {
+      const cat = item.category || 'Other'
+      if (!grouped[cat]) grouped[cat] = []
+      grouped[cat].push(item)
+    })
 
   return (
     <div className="booking-page-wrap">
@@ -93,7 +93,7 @@ export default function PriceSummaryPage() {
                 </div>
                 <div className="price-row">
                   <span className="label">Guests</span>
-                  <span className="value">{step1.guestCount} ({step1.vegCount} veg · {step1.nonVegCount} non-veg)</span>
+                  <span className="value">{step1.guestCount}</span>
                 </div>
                 <div className="price-row">
                   <span className="label">Venue</span>

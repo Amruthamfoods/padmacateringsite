@@ -70,7 +70,10 @@ router.get('/packages', async (req, res) => {
 router.get('/blocked-dates', async (req, res) => {
   try {
     const dates = await prisma.blockedDate.findMany({ orderBy: { date: 'asc' } })
-    res.json(dates.map(d => d.date.toISOString().split('T')[0]))
+    res.json(dates.map(d => ({
+      date: d.date.toISOString().split('T')[0],
+      blockedSlots: d.blockedSlots || []
+    })))
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: 'Failed to fetch blocked dates' })

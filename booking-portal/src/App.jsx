@@ -1,15 +1,16 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 
-import Header            from './components/Header'
-import LandingPage       from './pages/LandingPage'
-import EventSetupPage    from './pages/EventSetupPage'
-import MenuBuilderPage   from './pages/MenuBuilderPage'
-import ReviewPricePage   from './pages/ReviewPricePage'
-import PaymentPlanPage   from './pages/PaymentPlanPage'
+import Header from './components/Header'
+import LandingPage from './pages/LandingPage'
+import EventSetupPage from './pages/EventSetupPage'
+import MenuBuilderPage from './pages/MenuBuilderPage'
+import PaymentPlanPage from './pages/PaymentPlanPage'
 import BookingSuccessPage from './pages/BookingSuccessPage'
-import LoginPage         from './pages/LoginPage'
-import MyOrdersPage      from './pages/MyOrdersPage'
+import LoginPage from './pages/LoginPage'
+import MyOrdersPage from './pages/MyOrdersPage'
+import AboutPage from './pages/AboutPage'
+import ContactPage from './pages/ContactPage'
 
 export default function App() {
   return (
@@ -30,15 +31,17 @@ export default function App() {
       />
       <Header />
       <Routes>
-        <Route path="/"          element={<LandingPage />} />
-        <Route path="/setup"     element={<EventSetupPage />} />
-        <Route path="/menu"      element={<MenuBuilderPage />} />
-        <Route path="/review"    element={<ReviewPricePage />} />
-        <Route path="/payment"   element={<PaymentPlanPage />} />
-        <Route path="/success"   element={<BookingSuccessPage />} />
-        <Route path="/login"     element={<LoginPage />} />
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/setup" element={<EventSetupPage />} />
+        <Route path="/menu" element={<MenuBuilderPage />} />
+        <Route path="/payment" element={<PaymentPlanPage />} />
+        <Route path="/success" element={<BookingSuccessPage />} />
+        <Route path="/login" element={<LoginPage />} />
         <Route path="/my-orders" element={<MyOrdersPage />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/contact" element={<ContactPage />} />
       </Routes>
     </BrowserRouter>
   )
 }
+

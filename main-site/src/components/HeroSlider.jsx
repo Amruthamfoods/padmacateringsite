@@ -1,107 +1,73 @@
-import { useState, useEffect, useCallback } from 'react'
+import { } from 'react'
 
-const slides = [
-  {
-    img: 'https://images.unsplash.com/photo-1555244162-803834f70033?w=1920&auto=format&q=80',
-    tag: "Visakhapatnam's Premier Catering Since 1993",
-    title: 'Occasion for Today',
-    em: 'Memories for Lifetime',
-    sub: 'Bringing the finest flavours to your most cherished moments',
-  },
-  {
-    img: 'https://images.unsplash.com/photo-1567521464027-f127ff144326?w=1920&auto=format&q=80',
-    tag: '1 Crore+ Plates Served · 5000+ Events',
-    title: 'True Indian Flavours',
-    em: 'Crafted with Love',
-    sub: 'From intimate gatherings to grand weddings — we make every plate count',
-  },
-  {
-    img: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1920&auto=format&q=80',
-    tag: 'Wedding · Corporate · Social Events',
-    title: 'Excellence in',
-    em: 'Every Single Plate',
-    sub: 'Three decades of culinary mastery, served with passion and pride',
-  },
-  {
-    img: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1920&auto=format&q=80',
-    tag: 'We serve in Andhra Pradesh, Telangana, Odisha',
-    title: 'Your Dream Event',
-    em: 'Perfectly Catered',
-    sub: 'Let us transform your celebration into an unforgettable experience',
-  },
+const FOOD_IMAGES = [
+  'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=420&h=420&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=420&h=420&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=420&h=420&fit=crop&q=80',
 ]
 
 export default function HeroSlider({ onBookNow }) {
-  const [current, setCurrent] = useState(0)
-
-  const next = useCallback(() => setCurrent(c => (c + 1) % slides.length), [])
-  const prev = useCallback(() => setCurrent(c => (c - 1 + slides.length) % slides.length), [])
-
-  useEffect(() => {
-    const t = setInterval(next, 5500)
-    return () => clearInterval(t)
-  }, [next])
-
   return (
-    <section id="hero-slider">
-      {slides.map((s, i) => (
-        <div key={i} className={`hs-slide${i === current ? ' active' : ''}`}>
-          <div className="hs-bg" style={{ backgroundImage: `url(${s.img})` }} />
-          <div className="hs-overlay" />
-          <div className="hs-content">
-            <p className="hs-tag">{s.tag}</p>
-            <h1 className="hs-title">
-              {s.title}<br /><em>{s.em}</em>
-            </h1>
-            <div className="hs-ornament">
-              <span className="hs-line" />
-              <span className="hs-gem">✦</span>
-              <span className="hs-line" />
+    <section style={{ background: 'var(--bg)', paddingTop: 100, paddingBottom: 80, overflow: 'hidden' }}>
+      <div className="container">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 60, alignItems: 'center', minHeight: '80vh' }} className="hero-grid">
+          <div>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'var(--primary-bg)', border: '1px solid var(--primary-light)', borderRadius: 'var(--r-pill)', padding: '6px 16px', fontSize: '0.82rem', fontWeight: 600, color: 'var(--primary-dark)', marginBottom: 28 }}>
+              <i className="fa-solid fa-location-dot" style={{ fontSize: '0.75rem' }} />
+              Serving Visakhapatnam since 1993
             </div>
-            <p className="hs-sub">{s.sub}</p>
-            <div className="hs-btns">
-              <button className="btn btn-primary" onClick={onBookNow}>
+            <h1 style={{ fontFamily: 'var(--font)', fontWeight: 800, fontSize: 'clamp(2.4rem, 5vw, 3.8rem)', color: 'var(--heading)', lineHeight: 1.15, marginBottom: 20, letterSpacing: '-0.02em' }}>
+              Your Favorite <span style={{ color: 'var(--primary-dark)' }}>Catering</span><br />Delivered Hot &amp; Fresh
+            </h1>
+            <p style={{ fontSize: '1.05rem', color: 'var(--muted)', lineHeight: 1.7, marginBottom: 36, maxWidth: 440 }}>
+              Best catering service in Visakhapatnam. We are ready to serve your desire with 1 Crore+ plates of experience and a team that truly cares.
+            </p>
+            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+              <button onClick={onBookNow} className="site-btn site-btn-primary">
                 <i className="fa-solid fa-calendar-check" /> Book Your Event
               </button>
-              <a href="#cuisine" className="btn btn-outline">
-                <i className="fa-solid fa-utensils" /> Explore Menu
-              </a>
+              <a href="/consultation" className="site-btn site-btn-outline">Get Free Consultation</a>
+            </div>
+            <div style={{ display: 'flex', gap: 28, marginTop: 44, flexWrap: 'wrap' }}>
+              {[{ n: '5000+', l: 'Events Catered' }, { n: '1 Cr+', l: 'Plates Served' }, { n: '3000+', l: 'Happy Families' }].map(s => (
+                <div key={s.n}>
+                  <div style={{ fontWeight: 800, fontSize: '1.4rem', color: 'var(--heading)' }}>{s.n}</div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--muted)', marginTop: 2 }}>{s.l}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{ position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 420 }}>
+            <div style={{ position: 'absolute', width: 420, height: 420, borderRadius: '50%', background: 'var(--primary-bg)', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }} />
+            <div style={{ position: 'relative', zIndex: 2, width: 240, height: 240, borderRadius: '50%', overflow: 'hidden', border: '5px solid white', boxShadow: 'var(--shadow-lg)' }}>
+              <img src={FOOD_IMAGES[0]} alt="Catering" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            </div>
+            <div style={{ position: 'absolute', zIndex: 3, width: 140, height: 140, borderRadius: '50%', overflow: 'hidden', border: '4px solid white', boxShadow: 'var(--shadow-md)', top: '5%', right: '5%' }}>
+              <img src={FOOD_IMAGES[1]} alt="Food" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            </div>
+            <div style={{ position: 'absolute', zIndex: 3, width: 120, height: 120, borderRadius: '50%', overflow: 'hidden', border: '4px solid white', boxShadow: 'var(--shadow-md)', bottom: '5%', left: '8%' }}>
+              <img src={FOOD_IMAGES[2]} alt="Cuisine" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            </div>
+            <div style={{ position: 'absolute', zIndex: 4, bottom: '12%', right: '-2%', background: 'white', borderRadius: 'var(--r)', padding: '10px 16px', boxShadow: 'var(--shadow-md)', display: 'flex', alignItems: 'center', gap: 10, border: '1px solid var(--border-light)' }}>
+              <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--primary-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <i className="fa-solid fa-truck-fast" style={{ color: 'var(--primary-dark)', fontSize: '0.9rem' }} />
+              </div>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: '0.82rem', color: 'var(--heading)' }}>On-Time Delivery</div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>Guaranteed</div>
+              </div>
+            </div>
+            <div style={{ position: 'absolute', zIndex: 4, top: '10%', left: '-2%', background: 'white', borderRadius: 'var(--r)', padding: '10px 16px', boxShadow: 'var(--shadow-md)', border: '1px solid var(--border-light)' }}>
+              <div style={{ display: 'flex', gap: 2, marginBottom: 2 }}>
+                {[1,2,3,4,5].map(i => <i key={i} className="fa-solid fa-star" style={{ color: 'var(--star)', fontSize: '0.7rem' }} />)}
+              </div>
+              <div style={{ fontWeight: 700, fontSize: '0.8rem', color: 'var(--heading)' }}>4.9 / 5.0</div>
+              <div style={{ fontSize: '0.68rem', color: 'var(--muted)' }}>3000+ reviews</div>
             </div>
           </div>
         </div>
-      ))}
-
-      <button className="hs-arrow hs-prev" onClick={prev} aria-label="Previous">
-        <i className="fa-solid fa-chevron-left" />
-      </button>
-      <button className="hs-arrow hs-next" onClick={next} aria-label="Next">
-        <i className="fa-solid fa-chevron-right" />
-      </button>
-
-      <div className="hs-dots">
-        {slides.map((_, i) => (
-          <button key={i} className={`hs-dot${i === current ? ' active' : ''}`} onClick={() => setCurrent(i)} />
-        ))}
       </div>
-
-      <div className="hs-info-bar">
-        <div className="hs-info-inner">
-          {[
-            { icon: 'fa-regular fa-clock', lbl: 'Mon – Fri', val: '08:00 AM – 10:00 PM' },
-            { icon: 'fa-regular fa-clock', lbl: 'Sat – Sun', val: '10:00 AM – 11:00 PM' },
-            { icon: 'fa-solid fa-phone', lbl: 'Reservations', val: '+91 86 86 622 722' },
-            { icon: 'fa-solid fa-location-dot', lbl: 'Serving', val: 'AP · Telangana · Odisha' },
-          ].map(item => (
-            <div className="hs-info-item" key={item.lbl}>
-              <i className={item.icon} />
-              <div>
-                <span className="hil">{item.lbl}</span>
-                <span className="hiv">{item.val}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      <style>{`@media (max-width:900px){.hero-grid{grid-template-columns:1fr!important;gap:40px!important;text-align:center}.hero-grid>div:last-child{display:none}}`}</style>
     </section>
   )
 }

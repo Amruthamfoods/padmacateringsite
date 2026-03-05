@@ -1,59 +1,23 @@
-import { useEffect, useRef } from 'react'
-
-function Counter({ target, suffix, label, delay }) {
-  const ref = useRef(null)
-  const ran = useRef(false)
-
-  useEffect(() => {
-    const el = ref.current
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !ran.current) {
-          ran.current = true
-          observer.unobserve(el)
-          const dur = 2200
-          const fps = 60
-          const steps = dur / (1000 / fps)
-          const inc = target / steps
-          let val = 0
-          const tick = () => {
-            val = Math.min(val + inc, target)
-            el.textContent = Math.floor(val).toLocaleString('en-IN') + suffix
-            if (val < target) requestAnimationFrame(tick)
-          }
-          setTimeout(() => requestAnimationFrame(tick), delay)
-        }
-      },
-      { threshold: 0.5 }
-    )
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [target, suffix, delay])
-
-  return (
-    <div className="stat-num" ref={ref}>0{suffix}</div>
-  )
-}
-
-const stats = [
-  { target: 100, suffix: 'L+', label: 'Plates Served', delay: 0 },
-  { target: 5000, suffix: '+', label: 'Events Catered', delay: 100 },
-  { target: null, display: '30+', label: 'Years of Excellence', delay: 200 },
-  { target: null, display: '100%', label: 'Fresh Ingredients', delay: 300 },
+const STATS = [
+  { icon: 'fa-solid fa-utensils', value: '5,000+', label: 'Events Catered', color: '#E8F5E9', iconColor: '#2E7D32' },
+  { icon: 'fa-solid fa-plate-wheat', value: '1 Crore+', label: 'Plates Served', color: '#FFF8E1', iconColor: '#E65100' },
+  { icon: 'fa-solid fa-users', value: '3,000+', label: 'Happy Families', color: '#E3F2FD', iconColor: '#1565C0' },
+  { icon: 'fa-solid fa-award', value: '15+ Yrs', label: 'Experience', color: '#F3E5F5', iconColor: '#6A1B9A' },
 ]
-
 export default function Stats() {
   return (
-    <section id="stats">
+    <section style={{ background: 'var(--heading)', padding: '72px 0' }}>
       <div className="container">
-        <div className="stats-grid">
-          {stats.map((s, i) => (
-            <div className={`stat-item reveal d${i + 1}`} key={s.label}>
-              {s.target != null
-                ? <Counter target={s.target} suffix={s.suffix} label={s.label} delay={s.delay} />
-                : <div className="stat-num">{s.display}</div>
-              }
-              <div className="stat-lbl">{s.label}</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 32 }}>
+          {STATS.map(s => (
+            <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
+              <div style={{ width: 56, height: 56, borderRadius: 'var(--r)', background: s.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <i className={s.icon} style={{ color: s.iconColor, fontSize: '1.3rem' }} />
+              </div>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: '1.8rem', color: 'white', lineHeight: 1.1 }}>{s.value}</div>
+                <div style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.6)', marginTop: 3 }}>{s.label}</div>
+              </div>
             </div>
           ))}
         </div>

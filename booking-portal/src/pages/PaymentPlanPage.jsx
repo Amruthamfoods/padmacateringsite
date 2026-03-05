@@ -9,9 +9,9 @@ export default function PaymentPlanPage() {
   const navigate = useNavigate()
   const { eventDetails, menuPreferences, pricing, guestInfo, setGuestInfo, setPaymentPlan, paymentPlan, getBookingPayload, resetBooking } = useBookingStore()
 
-  const [payPlan,  setPayPlan]  = useState(paymentPlan || 'FULL')
-  const [contact,  setContact]  = useState({ name: guestInfo.name || '', email: guestInfo.email || '', phone: guestInfo.phone || '' })
-  const [loading,  setLoading]  = useState(false)
+  const [payPlan, setPayPlan] = useState(paymentPlan || 'FULL')
+  const [contact, setContact] = useState({ name: guestInfo.name || '', email: guestInfo.email || '', phone: guestInfo.phone || '' })
+  const [loading, setLoading] = useState(false)
 
   // Pre-fill from auth
   useEffect(() => {
@@ -20,7 +20,7 @@ export default function PaymentPlanPage() {
       if (u.name && !contact.name) {
         setContact({ name: u.name || '', email: u.email || '', phone: u.phone || '' })
       }
-    } catch {}
+    } catch { }
   }, [])
 
   // Guard: must have pricing and menu
@@ -38,12 +38,12 @@ export default function PaymentPlanPage() {
     )
   }
 
-  const total      = pricing.total
+  const total = pricing.total
   const advanceAmt = Math.round(total * 0.5)
-  const payAmt     = payPlan === 'FULL' ? total : advanceAmt
+  const payAmt = payPlan === 'FULL' ? total : advanceAmt
 
   async function handleConfirm() {
-    if (!contact.name.trim())  { toast.error('Please enter your name'); return }
+    if (!contact.name.trim()) { toast.error('Please enter your name'); return }
     if (!contact.phone.trim()) { toast.error('Please enter your phone number'); return }
 
     setLoading(true)
@@ -51,10 +51,10 @@ export default function PaymentPlanPage() {
       setGuestInfo(contact)
       setPaymentPlan(payPlan)
 
-      const token   = localStorage.getItem('padma_token')
+      const token = localStorage.getItem('padma_token')
       const payload = {
         ...getBookingPayload(),
-        guestName:  contact.name,
+        guestName: contact.name,
         guestEmail: contact.email,
         guestPhone: contact.phone,
         paymentPlan: payPlan,
@@ -175,17 +175,17 @@ export default function PaymentPlanPage() {
 
           {/* ── RIGHT: Order total ── */}
           <div>
-            <div style={{ background: '#fff', border: '1.5px solid var(--border)', borderRadius: 'var(--radius)', overflow: 'hidden', position: 'sticky', top: 90 }}>
-              <div style={{ padding: '14px 20px', background: 'var(--bg-pink)', borderBottom: '1px solid var(--border)', fontWeight: 800, fontSize: '0.95rem', color: 'var(--text-dark)', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ background: '#fff', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-xl)', overflow: 'hidden', position: 'sticky', top: 90, boxShadow: 'var(--shadow-sm)' }}>
+              <div style={{ padding: '16px 20px', background: 'transparent', borderBottom: '1px solid var(--border-light)', fontWeight: 800, fontSize: '1.05rem', fontFamily: 'var(--font-display)', color: 'var(--text-dark)', display: 'flex', alignItems: 'center', gap: 10 }}>
                 <i className="fa-solid fa-receipt" style={{ color: 'var(--red)' }} /> Order Total
               </div>
-              <div style={{ padding: '16px 20px' }}>
+              <div style={{ padding: '20px' }}>
                 {/* Quick summary */}
                 {[
-                  ['Package',   menuPreferences.selectedPackage?.name || '—'],
-                  ['Occasion',  eventDetails.occasion || '—'],
-                  ['Date',      eventDetails.eventDate || '—'],
-                  ['Guests',    eventDetails.guestCount ? `${eventDetails.guestCount} guests` : '—'],
+                  ['Package', menuPreferences.selectedPackage?.name || '—'],
+                  ['Occasion', eventDetails.occasion || '—'],
+                  ['Date', eventDetails.eventDate || '—'],
+                  ['Guests', eventDetails.guestCount ? `${eventDetails.guestCount} guests` : '—'],
                 ].map(([lbl, val]) => (
                   <div key={lbl} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontSize: '0.83rem', gap: 8 }}>
                     <span style={{ color: 'var(--text-muted)' }}>{lbl}</span>

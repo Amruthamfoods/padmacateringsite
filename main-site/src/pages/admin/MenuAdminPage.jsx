@@ -5,6 +5,53 @@ import api from '../../lib/api'
 const STYLES = ['ANDHRA', 'NORTH_INDIAN', 'MIXED', 'FUSION']
 const TYPES = ['VEG', 'NON_VEG']
 
+function CategoryModal({ category, onSave, onClose }) {
+  const [form, setForm] = useState(category || { name: '', sortOrder: 0, active: true })
+  const [saving, setSaving] = useState(false)
+
+  async function handleSave() {
+    if (!form.name) { toast.error('Name required'); return }
+    setSaving(true)
+    try {
+      if (category) {
+        await api.put(`/admin/menu/categories/${category.id}`, form)
+        toast.success('Category updated')
+      } else {
+        await api.post('/admin/menu/categories', form)
+        toast.success('Category created')
+      }
+      onSave()
+    } catch { toast.error('Failed to save category') }
+    finally { setSaving(false) }
+  }
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-box" style={{ maxWidth: 360 }}>
+        <div className="modal-header">
+          <h3 className="modal-title">{category ? 'Edit Category' : 'Add Category'}</h3>
+          <button className="modal-close" onClick={onClose}><i className="fa-solid fa-xmark" /></button>
+        </div>
+        <div className="field-block">
+          <label className="field-label">Name *</label>
+          <input type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="booking-input" />
+        </div>
+        <div className="field-block">
+          <label className="field-label">Sort Order</label>
+          <input type="number" value={form.sortOrder} onChange={e => setForm(f => ({ ...f, sortOrder: e.target.value }))} className="booking-input" />
+        </div>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.85rem', color: 'var(--text-warm)', margin: '16px 0 20px', cursor: 'pointer' }}>
+          <input type="checkbox" checked={form.active} onChange={e => setForm(f => ({ ...f, active: e.target.checked }))} />
+          Active (visible to customers)
+        </label>
+        <button onClick={handleSave} disabled={saving} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+          {saving ? <><i className="fa-solid fa-circle-notch fa-spin" /> Saving…</> : <><i className="fa-solid fa-floppy-disk" /> Save Category</>}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function ItemModal({ item, categories, onSave, onClose }) {
   const [form, setForm] = useState(item || { name: '', description: '', categoryId: '', style: 'ANDHRA', type: 'VEG', price: '', active: true })
   const [saving, setSaving] = useState(false)
@@ -68,7 +115,7 @@ function ItemModal({ item, categories, onSave, onClose }) {
 }
 
 function PackageModal({ pkg, onSave, onClose }) {
-  const [form, setForm] = useState(pkg || { name: '', eventType: '', style: 'ANDHRA', type: 'VEG', servesMin: 50, description: '', basePrice: 0 })
+  const [form, setForm] = useState(pkg || { name: '', eventType: '', style: 'ANDHRA', type: 'VEG', servesMin: 50, description: '', basePrice: 0, mealTypes: ['Breakfast', 'Lunch', 'Snacks', 'Dinner'] })
   const [saving, setSaving] = useState(false)
 
   async function handleSave() {
@@ -103,6 +150,40 @@ function PackageModal({ pkg, onSave, onClose }) {
         <div className="field-block">
           <label className="field-label">Description</label>
           <textarea value={form.description || ''} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2} className="booking-input" style={{ resize: 'vertical' }} />
+        </div>
+        <div className="field-block">
+          <label className="field-label">Package Thumbnail / Banner Image</label>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 8, lineHeight: 1.4 }}>
+            Please provide high quality images for the frontend. Recommended sizes:
+            <ul style={{ paddingLeft: 16, margin: '4px 0 0 0', color: 'var(--white)' }}>
+              <li><strong>Thumbnail (Cards):</strong> 400x300px (4:3 aspect ratio)</li>
+              <li><strong>Banner (Details):</strong> 1200x400px (3:1 aspect ratio)</li>
+            </ul>
+          </div>
+          <input type="file" accept="image/*" className="booking-input" style={{ padding: '6px' }} />
+        </div>
+        <div className="field-block">
+          <label className="field-label">Available Meal Types</label>
+          <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginTop: '8px' }}>
+            {['Breakfast', 'Lunch', 'Snacks', 'Dinner'].map(meal => (
+              <label key={meal} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', cursor: 'pointer', color: 'var(--text-light)' }}>
+                <input
+                  type="checkbox"
+                  checked={form.mealTypes?.includes(meal)}
+                  onChange={e => {
+                    const current = form.mealTypes || []
+                    setForm(f => ({
+                      ...f,
+                      mealTypes: e.target.checked
+                        ? [...current, meal]
+                        : current.filter(m => m !== meal)
+                    }))
+                  }}
+                />
+                {meal}
+              </label>
+            ))}
+          </div>
         </div>
         <div className="form-row-2">
           <div className="field-block" style={{ marginBottom: 0 }}>
@@ -178,13 +259,15 @@ function TierModal({ packageId, tier, onSave, onClose }) {
 function RuleModal({ packageId, rule, categories, allItems, onSave, onClose }) {
   const existingItemIds = rule?.allowedItems?.map(ai => ai.menuItemId) || []
   const [form, setForm] = useState(rule
-    ? { categoryId: rule.categoryId, label: rule.label, minChoices: rule.minChoices, maxChoices: rule.maxChoices, extraItemPrice: rule.extraItemPrice ?? 0 }
+    ? { categoryId: rule.categoryId || 'MIXED', label: rule.label, minChoices: rule.minChoices, maxChoices: rule.maxChoices, extraItemPrice: rule.extraItemPrice ?? 0 }
     : { categoryId: '', label: '', minChoices: 1, maxChoices: '', extraItemPrice: 0 }
   )
   const [selectedItemIds, setSelectedItemIds] = useState(existingItemIds)
+  const [searchQuery, setSearchQuery] = useState('')
   const [saving, setSaving] = useState(false)
 
-  const categoryItems = allItems.filter(i => i.categoryId === parseInt(form.categoryId))
+  let categoryItems = form.categoryId === 'MIXED' ? allItems : allItems.filter(i => i.categoryId === parseInt(form.categoryId))
+  if (searchQuery) categoryItems = categoryItems.filter(i => i.name.toLowerCase().includes(searchQuery.toLowerCase()))
 
   function toggleItem(id) {
     setSelectedItemIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
@@ -194,7 +277,7 @@ function RuleModal({ packageId, rule, categories, allItems, onSave, onClose }) {
     if (!form.categoryId || !form.label || !form.maxChoices) { toast.error('All fields required'); return }
     setSaving(true)
     try {
-      const payload = { ...form, itemIds: selectedItemIds }
+      const payload = { ...form, categoryId: form.categoryId === 'MIXED' ? '' : form.categoryId, itemIds: selectedItemIds }
       if (rule) {
         await api.put(`/admin/packages/${packageId}/rules/${rule.id}`, payload)
         toast.success('Rule updated')
@@ -222,6 +305,7 @@ function RuleModal({ packageId, rule, categories, allItems, onSave, onClose }) {
           <label className="field-label">Category *</label>
           <select value={form.categoryId} onChange={e => { setForm(f => ({ ...f, categoryId: e.target.value })); setSelectedItemIds([]) }} className="booking-input">
             <option value="">Select…</option>
+            <option value="MIXED">[Mixed Categories / Accompaniments]</option>
             {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         </div>
@@ -236,8 +320,10 @@ function RuleModal({ packageId, rule, categories, allItems, onSave, onClose }) {
           </div>
         </div>
         <div className="field-block">
-          <label className="field-label">Extra Item Price (₹/item beyond max)</label>
-          <input type="number" min={0} placeholder="0 = not allowed" value={form.extraItemPrice} onChange={e => setForm(f => ({ ...f, extraItemPrice: e.target.value }))} className="booking-input" />
+          <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.85rem', color: 'var(--text-warm)', margin: '16px 0 20px', cursor: 'pointer' }}>
+            <input type="checkbox" checked={form.extraItemPrice > 0} onChange={e => setForm(f => ({ ...f, extraItemPrice: e.target.checked ? 1 : 0 }))} />
+            Allow extra items (uses individual item prices)
+          </label>
         </div>
 
         {form.categoryId && (
@@ -246,8 +332,16 @@ function RuleModal({ packageId, rule, categories, allItems, onSave, onClose }) {
               Allowed Items in this rule
               <span style={{ color: 'var(--text-faint)', fontWeight: 400, marginLeft: 6 }}>(leave all unchecked = show entire category)</span>
             </label>
+            <input
+              type="text"
+              placeholder="Search items..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="booking-input"
+              style={{ marginBottom: 8 }}
+            />
             {categoryItems.length === 0
-              ? <p style={{ fontSize: '0.78rem', color: 'var(--text-faint)' }}>No items in this category</p>
+              ? <p style={{ fontSize: '0.78rem', color: 'var(--text-faint)' }}>No items found</p>
               : (
                 <div style={{ maxHeight: 200, overflowY: 'auto', border: '1px solid var(--gold-line)', borderRadius: 8, padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {categoryItems.map(item => (
@@ -354,8 +448,8 @@ function PackageEditPanel({ pkg, categories, allItems, onReload, onClose }) {
                 <div style={{ flex: 1 }}>
                   <p style={{ fontSize: '0.82rem', color: 'var(--white)' }}>{rule.label}</p>
                   <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                    {rule.category?.name} · Pick {rule.minChoices}–{rule.maxChoices}
-                    {rule.extraItemPrice > 0 && <span style={{ color: 'var(--gold)', marginLeft: 6 }}>+₹{rule.extraItemPrice}/extra</span>}
+                    {rule.category ? rule.category.name : 'Accompaniments / Mixed'} · Pick {rule.minChoices}–{rule.maxChoices}
+                    {rule.extraItemPrice > 0 && <span style={{ color: 'var(--gold)', marginLeft: 6 }}>+ individual item extras</span>}
                   </p>
                   {rule.allowedItems?.length > 0 && (
                     <div style={{ marginTop: 4, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
@@ -410,7 +504,9 @@ export default function MenuAdminPage() {
   const [loading, setLoading] = useState(true)
   const [modal, setModal] = useState(null)
   const [pkgModal, setPkgModal] = useState(null)
+  const [catModal, setCatModal] = useState(null)
   const [editingPkg, setEditingPkg] = useState(null)
+  const [openCategories, setOpenCategories] = useState({})
   const fileRef = useRef()
 
   function load() {
@@ -418,7 +514,7 @@ export default function MenuAdminPage() {
     Promise.all([
       api.get('/admin/menu/items'),
       api.get('/admin/menu/packages'),
-      api.get('/menu/categories'),
+      api.get('/admin/menu/categories'),
     ]).then(([i, p, c]) => {
       setItems(i.data)
       setPackages(p.data)
@@ -429,7 +525,7 @@ export default function MenuAdminPage() {
         if (refreshed) setEditingPkg(refreshed)
       }
     }).catch(() => toast.error('Failed to load'))
-    .finally(() => setLoading(false))
+      .finally(() => setLoading(false))
   }
 
   useEffect(() => { load() }, [])
@@ -450,21 +546,58 @@ export default function MenuAdminPage() {
       setPackages(ps => ps.filter(p => p.id !== id))
       if (editingPkg?.id === id) setEditingPkg(null)
       toast.success('Package deleted')
-    } catch { toast.error('Failed to delete') }
+    } catch { toast.error('Failed to delete package') }
   }
 
-  async function handleCSV(e) {
+  async function deleteCategory(id) {
+    if (!confirm('Delete this category? Items will be moved to the Uncategorized bin section.')) return
+    try {
+      await api.delete(`/admin/menu/categories/${id}`)
+      toast.success('Category deleted')
+      load()
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to delete category')
+    }
+  }
+
+  async function handleExcel(e) {
     const file = e.target.files[0]
     if (!file) return
-    const fd = new FormData()
-    fd.append('file', file)
+    const formData = new FormData()
+    formData.append('file', file)
     try {
-      const { data } = await api.post('/admin/menu/import', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
-      toast.success(`Imported ${data.imported} items`)
+      const res = await api.post('/admin/menu/import', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+      toast.success(`Imported ${res.data.imported} items!`)
       load()
-    } catch { toast.error('Import failed') }
+    } catch { toast.error('Failed to import Excel') }
     e.target.value = ''
   }
+
+  function handleExportExcel() {
+    api.get('/admin/menu/export', { responseType: 'blob' })
+      .then(res => {
+        const url = window.URL.createObjectURL(new Blob([res.data]))
+        const link = document.createElement('a')
+        link.href = url
+        link.setAttribute('download', 'menu_items.xlsx')
+        document.body.appendChild(link)
+        link.click()
+        link.parentNode.removeChild(link)
+      })
+      .catch(() => toast.error('Failed to export Excel'))
+  }
+
+  async function updateItemInline(id, data) {
+    setItems(items.map(i => i.id === id ? { ...i, ...data } : i))
+    try {
+      await api.put(`/admin/menu/items/${id}`, data)
+    } catch {
+      toast.error('Failed to update item')
+      load() // revert optimistic update
+    }
+  }
+
+  if (loading) return <div className="admin-loading"><i className="fa-solid fa-spinner fa-spin" /></div>
 
   return (
     <div style={{ display: 'flex', gap: 20 }}>
@@ -500,37 +633,72 @@ export default function MenuAdminPage() {
               <button onClick={() => setModal('add')} className="btn btn-primary" style={{ fontSize: '0.82rem', padding: '8px 16px' }}>
                 <i className="fa-solid fa-plus" /> Add Item
               </button>
-              <input type="file" ref={fileRef} accept=".csv" onChange={handleCSV} style={{ display: 'none' }} />
+              <input type="file" ref={fileRef} accept=".xlsx, .xls" onChange={handleExcel} style={{ display: 'none' }} />
               <button onClick={() => fileRef.current?.click()} className="btn btn-outline" style={{ fontSize: '0.82rem', padding: '8px 16px' }}>
-                <i className="fa-solid fa-file-csv" /> Import CSV
+                <i className="fa-solid fa-file-excel" /> Import Excel
+              </button>
+              <button onClick={handleExportExcel} className="btn btn-outline" style={{ fontSize: '0.82rem', padding: '8px 16px' }}>
+                <i className="fa-solid fa-download" /> Export Excel
               </button>
             </div>
-            <div className="admin-table-wrap">
-              <table className="admin-table">
-                <thead>
-                  <tr>{['Name', 'Category', 'Style', 'Type', 'Price', 'Active', ''].map(h => <th key={h}>{h}</th>)}</tr>
-                </thead>
-                <tbody>
-                  {items.map(item => (
-                    <tr key={item.id}>
-                      <td style={{ color: 'var(--white)', fontWeight: 500 }}>{item.name}</td>
-                      <td style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{item.category?.name}</td>
-                      <td style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{item.style.replace('_', ' ')}</td>
-                      <td>
-                        <span style={{ padding: '2px 8px', borderRadius: 20, fontSize: '0.72rem', fontWeight: 600, background: item.type === 'VEG' ? 'rgba(46,160,67,0.15)' : 'rgba(192,57,43,0.15)', color: item.type === 'VEG' ? '#2ea843' : '#c0392b' }}>
-                          {item.type.replace('_', '-')}
-                        </span>
-                      </td>
-                      <td style={{ fontFamily: 'var(--font-display)', color: 'var(--gold)' }}>₹{item.price}</td>
-                      <td><span style={{ width: 8, height: 8, borderRadius: '50%', display: 'inline-block', background: item.active ? '#2ea843' : 'var(--text-faint)' }} /></td>
-                      <td style={{ display: 'flex', gap: 4 }}>
-                        <button onClick={() => setModal(item)} className="action-btn edit"><i className="fa-solid fa-pen" /></button>
-                        <button onClick={() => deleteItem(item.id)} className="action-btn del"><i className="fa-solid fa-trash" /></button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div style={{ padding: '16px 20px' }}>
+              {categories.map(cat => {
+                const catItems = items.filter(i => i.categoryId === cat.id)
+                if (catItems.length === 0) return null
+                const isOpen = openCategories[cat.id] !== false // Default open
+                return (
+                  <div key={cat.id} style={{ marginBottom: 16, background: 'var(--dark-3)', borderRadius: 10, overflow: 'hidden', border: '1px solid var(--gold-line)' }}>
+                    <div onClick={() => setOpenCategories(o => ({ ...o, [cat.id]: !isOpen }))} style={{ padding: '12px 16px', background: 'var(--dark-2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
+                      <h4 style={{ color: 'var(--gold)', margin: 0, fontSize: '0.9rem' }}>{cat.name} ({catItems.length} items) {!cat.active && <span style={{ color: 'var(--red)', fontSize: '0.7rem' }}>(Inactive)</span>}</h4>
+                      <i className={`fa-solid fa-chevron-${isOpen ? 'up' : 'down'}`} style={{ color: 'var(--text-muted)' }} />
+                    </div>
+                    {isOpen && (
+                      <div style={{ padding: 12, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 12 }}>
+                        {catItems.map(item => (
+                          <div key={item.id} style={{ position: 'relative', background: 'var(--dark-2)', padding: '16px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.05)' }}>
+                            {/* Veg / Non-Veg Dot */}
+                            <div style={{ position: 'absolute', top: 12, left: 12, width: 10, height: 10, borderRadius: '50%', background: item.type === 'VEG' ? '#2ea843' : '#c0392b' }} />
+
+                            {/* Card Header */}
+                            <div style={{ paddingLeft: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                              <div style={{ flex: 1, paddingRight: 8 }}>
+                                <p style={{ color: 'var(--white)', fontWeight: 600, fontSize: '0.95rem', margin: '0 0 4px 0' }}>{item.name}</p>
+                                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{item.style.replace('_', ' ')}</span>
+                              </div>
+                              <div style={{ display: 'flex', gap: 4 }}>
+                                <button onClick={() => setModal(item)} className="action-btn edit" style={{ width: 28, height: 28 }}><i className="fa-solid fa-pen" style={{ fontSize: '0.75rem' }} /></button>
+                                <button onClick={() => deleteItem(item.id)} className="action-btn del" style={{ width: 28, height: 28 }}><i className="fa-solid fa-trash" style={{ fontSize: '0.75rem' }} /></button>
+                              </div>
+                            </div>
+
+                            {/* Inline Edit Area */}
+                            <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'space-between' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <label style={{ fontSize: '0.75rem', color: 'var(--text-faint)' }}>Price ₹:</label>
+                                <input
+                                  type="number"
+                                  value={item.price}
+                                  onChange={e => updateItemInline(item.id, { price: parseFloat(e.target.value) || 0 })}
+                                  style={{ width: 70, background: 'var(--dark-1)', border: '1px solid var(--gold-line)', color: 'var(--white)', padding: '4px 8px', borderRadius: 4, fontFamily: 'var(--font-display)', fontSize: '0.85rem' }}
+                                />
+                              </div>
+                              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.75rem', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={item.active}
+                                  onChange={e => updateItemInline(item.id, { active: e.target.checked })}
+                                />
+                                {item.active ? 'Active' : 'Hidden'}
+                              </label>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+              {items.length === 0 && <p style={{ color: 'var(--text-faint)', textAlign: 'center', padding: '30px 0' }}>No items found</p>}
             </div>
           </div>
         ) : tab === 'packages' ? (
@@ -573,20 +741,35 @@ export default function MenuAdminPage() {
           </div>
         ) : (
           <div className="admin-card">
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--gold-line)', display: 'flex', gap: 8 }}>
+              <button onClick={() => setCatModal('add')} className="btn btn-primary" style={{ fontSize: '0.82rem', padding: '8px 16px' }}>
+                <i className="fa-solid fa-plus" /> Add Category
+              </button>
+            </div>
             <div className="admin-table-wrap">
               <table className="admin-table">
                 <thead>
-                  <tr>{['#', 'Name', 'Sort Order', 'Active'].map(h => <th key={h}>{h}</th>)}</tr>
+                  <tr>{['#', 'Name', 'Sort Order', 'Active', ''].map(h => <th key={h}>{h}</th>)}</tr>
                 </thead>
                 <tbody>
                   {categories.map(cat => (
                     <tr key={cat.id}>
                       <td style={{ color: 'var(--text-faint)', fontSize: '0.75rem' }}>{cat.id}</td>
-                      <td style={{ color: 'var(--white)', fontWeight: 500 }}>{cat.name}</td>
+                      <td style={{ color: 'var(--white)', fontWeight: 500 }}>
+                        {cat.name}
+                        {!cat.active && <span style={{ marginLeft: 8, fontSize: '0.7rem', color: 'var(--red)', border: '1px solid var(--red)', padding: '2px 6px', borderRadius: 4 }}>Inactive</span>}
+                      </td>
                       <td style={{ color: 'var(--text-muted)' }}>{cat.sortOrder}</td>
                       <td><span style={{ width: 8, height: 8, borderRadius: '50%', display: 'inline-block', background: cat.active ? '#2ea843' : 'var(--text-faint)' }} /></td>
+                      <td style={{ display: 'flex', gap: 4 }}>
+                        <button onClick={() => setCatModal(cat)} className="action-btn edit"><i className="fa-solid fa-pen" /></button>
+                        <button onClick={() => deleteCategory(cat.id)} className="action-btn del"><i className="fa-solid fa-trash" /></button>
+                      </td>
                     </tr>
                   ))}
+                  {categories.length === 0 && (
+                    <tr><td colSpan={5} style={{ textAlign: 'center', color: 'var(--text-faint)', padding: '30px 0' }}>No categories yet</td></tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -621,6 +804,15 @@ export default function MenuAdminPage() {
           pkg={pkgModal === 'add' ? null : pkgModal}
           onSave={() => { setPkgModal(null); load() }}
           onClose={() => setPkgModal(null)}
+        />
+      )}
+
+      {/* Category modal */}
+      {catModal && (
+        <CategoryModal
+          category={catModal === 'add' ? null : catModal}
+          onSave={() => { setCatModal(null); load() }}
+          onClose={() => setCatModal(null)}
         />
       )}
     </div>

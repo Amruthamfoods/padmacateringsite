@@ -148,3 +148,91 @@
 {"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 17:36:00"}
 {"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-02-27 17:36:00"}
 {"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 17:36:01"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 17:38:15"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 17:38:16"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-02-27 17:38:16"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 17:38:16"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 17:38:16"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 23:10:08"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-02-27 23:10:08"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 23:10:09"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-27 23:10:09"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-28 00:10:43"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-28 00:10:44"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-28 00:10:44"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-28 00:29:12"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-28 00:29:12"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-28 00:29:35"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-28 00:29:35"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-28 00:29:39"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-28 00:29:39"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-28 00:30:34"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-02-28 00:30:34"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-28 00:34:20"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-02-28 00:34:20"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-28 09:21:44"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-28 19:43:58"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-02-28 19:43:59"}
+{"email":"dasaradhcherukuri@gmail.com","level":"info","message":"User logged in","service":"padma-catering-server","timestamp":"2026-02-28 19:55:31","userId":3}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-03-03 16:53:06"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-03-03 16:53:06"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-03-03 17:14:54"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-03-03 17:14:54"}
+{"email":"admin@padmacatering.com","level":"info","message":"User logged in","service":"padma-catering-server","timestamp":"2026-03-03 17:15:00","userId":1}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-03-03 17:28:20"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-03-03 17:28:20"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-03-03 17:28:22"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-03-03 17:28:22"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-03-03 17:28:22"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-03-03 17:28:22"}
+{"email":"admin@example.com","level":"warn","message":"Login failed - user not found","service":"padma-catering-server","timestamp":"2026-03-03 17:32:10"}
+{"email":"admin@example.com","level":"info","message":"User registered","service":"padma-catering-server","timestamp":"2026-03-03 17:34:43","userId":4}
+{"email":"admin@padmacatering.com","level":"info","message":"User logged in","service":"padma-catering-server","timestamp":"2026-03-03 17:42:37","userId":1}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-03-03 17:50:00"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-03-03 17:50:00"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-03-03 17:50:01"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-03-03 17:50:01"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-03-03 17:50:02"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-03-03 17:50:02"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-03-03 17:51:04"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-03-03 17:51:04"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-03-03 17:51:06"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-03-03 17:51:06"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-03-03 17:55:10"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-03-03 17:55:10"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-03-03 17:55:11"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-03-03 17:55:11"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-03-03 17:55:13"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-03-03 17:55:13"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-03-03 17:55:14"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-03-03 17:55:14"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-03-03 23:30:55"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-03-03 23:30:55"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-03-03 23:32:30"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-03-03 23:32:30"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-03-03 23:32:31"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-03-03 23:32:31"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-03-03 23:34:06"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-03-03 23:34:06"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-03-03 23:37:03"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-03-03 23:37:03"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-03-03 23:37:05"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-03-03 23:37:05"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-03-04 00:03:14"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-03-04 00:03:14"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-03-04 00:03:16"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-03-04 00:03:16"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-03-04 00:04:45"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-03-04 00:04:45"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-03-04 00:05:04"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-03-04 00:05:04"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-03-04 00:05:08"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-03-04 00:05:08"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-03-04 00:05:27"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-03-04 00:05:27"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-03-04 00:05:40"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-03-04 00:05:40"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-03-04 00:05:47"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-03-04 00:05:47"}
+{"level":"info","message":"Database connected","service":"padma-catering-server","timestamp":"2026-03-04 00:18:07"}
+{"env":"development","level":"info","message":"Padma Catering API running","port":"3001","service":"padma-catering-server","timestamp":"2026-03-04 00:18:07"}

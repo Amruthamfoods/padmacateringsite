@@ -11,40 +11,38 @@ const OCCASIONS = [
 
 const TIME_SLOTS = {
   Afternoon: ['11:30 AM – 12:30 PM', '12:00 PM – 1:00 PM', '12:30 PM – 1:30 PM', '1:30 PM – 2:30 PM', '2:30 PM – 3:30 PM'],
-  Night:     ['6:30 PM – 7:30 PM', '7:00 PM – 8:00 PM', '7:30 PM – 8:30 PM', '8:00 PM – 9:00 PM'],
+  Night: ['6:30 PM – 7:30 PM', '7:00 PM – 8:00 PM', '7:30 PM – 8:30 PM', '8:00 PM – 9:00 PM'],
 }
 const ALL_SLOTS = [...TIME_SLOTS.Afternoon, ...TIME_SLOTS.Night]
 
 const DELIVERY_OPTIONS = [
-  { id: 'GATE',             label: 'Gate Delivery (Included)',             price: 0 },
-  { id: 'DOORSTEP',         label: 'Doorstep Delivery (+₹500)',            price: 500 },
-  { id: 'DOORSTEP_SERVICE', label: 'Doorstep + Serving (+₹650/server)',    price: 650 },
+  { id: 'GATE', label: 'Gate Delivery (Included)', price: 0 },
+  { id: 'DOORSTEP', label: 'Doorstep Delivery (+₹500)', price: 500 },
+  { id: 'DOORSTEP_SERVICE', label: 'Doorstep + Serving (+₹650/server)', price: 650 },
 ]
 
 const today = new Date().toISOString().split('T')[0]
 
 export default function EventDetailsPage() {
   const navigate = useNavigate()
-  const [occasion, setOccasion]     = useState('')
-  const [eventDate, setEventDate]   = useState('')
-  const [timeSlot, setTimeSlot]     = useState('')
+  const [occasion, setOccasion] = useState('')
+  const [eventDate, setEventDate] = useState('')
+  const [timeSlot, setTimeSlot] = useState('')
   const [guestCount, setGuestCount] = useState(100)
-  const [vegCount, setVegCount]     = useState(50)
-  const [address, setAddress]       = useState('')
-  const [delivery, setDelivery]     = useState('GATE')
+  const [address, setAddress] = useState('')
+  const [delivery, setDelivery] = useState('GATE')
   const [staffCount, setStaffCount] = useState(2)
   const [spiceLevel, setSpiceLevel] = useState('MEDIUM')
   const [specialNotes, setSpecialNotes] = useState('')
   const [blockedDates, setBlockedDates] = useState([])
-  const [errors, setErrors]         = useState({})
+  const [errors, setErrors] = useState({})
 
   useEffect(() => {
     api.get('/menu/blocked-dates').then(r => {
       setBlockedDates(r.data.map(d => d.date?.split('T')[0] || d))
-    }).catch(() => {})
+    }).catch(() => { })
   }, [])
 
-  const nonVegCount = Math.max(0, guestCount - vegCount)
   const suggestedStaff = Math.max(1, Math.ceil(guestCount / 30))
 
   const pkg = (() => { try { return JSON.parse(sessionStorage.getItem('selectedPackage') || '{}') } catch { return {} } })()
@@ -52,12 +50,12 @@ export default function EventDetailsPage() {
 
   function validate() {
     const errs = {}
-    if (!occasion)                    errs.occasion   = 'Select an occasion'
-    if (!eventDate)                   errs.eventDate  = 'Select a date'
+    if (!occasion) errs.occasion = 'Select an occasion'
+    if (!eventDate) errs.eventDate = 'Select a date'
     else if (blockedDates.includes(eventDate)) errs.eventDate = 'This date is unavailable'
-    if (!timeSlot)                    errs.timeSlot   = 'Select a time slot'
-    if (guestCount < 10)              errs.guestCount = 'Minimum 10 guests'
-    if (!address.trim())              errs.address    = 'Enter venue address'
+    if (!timeSlot) errs.timeSlot = 'Select a time slot'
+    if (guestCount < 10) errs.guestCount = 'Minimum 10 guests'
+    if (!address.trim()) errs.address = 'Enter venue address'
     setErrors(errs)
     return Object.keys(errs).length === 0
   }
@@ -70,7 +68,7 @@ export default function EventDetailsPage() {
       : deliveryInfo.price
 
     sessionStorage.setItem('bookingStep1', JSON.stringify({
-      occasion, eventDate, timeSlot, guestCount, vegCount, nonVegCount,
+      occasion, eventDate, timeSlot, guestCount, vegCount: guestCount, nonVegCount: 0,
       venueAddress: address, deliveryType: delivery, deliveryCharge,
       staffCount: delivery === 'DOORSTEP_SERVICE' ? staffCount : 0,
       spiceLevel, specialInstructions: specialNotes,
@@ -175,23 +173,6 @@ export default function EventDetailsPage() {
                   </button>
                 </div>
                 {errors.guestCount && <p style={{ fontSize: '0.78rem', color: '#DC2626' }}>{errors.guestCount}</p>}
-              </div>
-
-              <div className="form-field">
-                <label className="form-label"><i className="fa-solid fa-leaf" /> Veg / Non-Veg Split</label>
-                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                  <div style={{ flex: 1 }}>
-                    <label style={{ fontSize: '0.72rem', color: '#16A34A', fontWeight: 700, display: 'block', marginBottom: 4 }}>🟢 Veg</label>
-                    <input type="number" className="form-input" min={0} max={guestCount} value={vegCount}
-                      onChange={e => setVegCount(Math.min(guestCount, parseInt(e.target.value) || 0))}
-                      style={{ textAlign: 'center', fontWeight: 700 }} />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <label style={{ fontSize: '0.72rem', color: '#DC2626', fontWeight: 700, display: 'block', marginBottom: 4 }}>🔴 Non-Veg</label>
-                    <input type="number" className="form-input" readOnly value={nonVegCount}
-                      style={{ textAlign: 'center', fontWeight: 700, background: 'var(--surface-2)' }} />
-                  </div>
-                </div>
               </div>
             </div>
           </div>

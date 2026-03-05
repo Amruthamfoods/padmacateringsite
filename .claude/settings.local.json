@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s -H \"X-Figma-Token: figd_gICLyPEUccXARPShVz5cjVmIHafCtyCTkVWRsOGm\" \"https://api.figma.com/v1/files/Jd4CbxZX0guMH1mYYLdo8r/nodes?ids=3:55\")"
+    ]
+  }
+}
