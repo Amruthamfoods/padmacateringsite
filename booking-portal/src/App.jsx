@@ -22,32 +22,21 @@ function WebNav() {
     <nav className="web-nav">
       <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 24px', display: 'flex', alignItems: 'center', width: '100%', gap: 0, flex: 1 }}>
 
-        {/* Logo only */}
-        <NavLink to="/setup" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0, marginRight: 'auto' }}>
+        {/* Logo → back to main site */}
+        <a href="https://padmacatering.com" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0, marginRight: 'auto' }}>
           <img src="/amrutham-logo.png" alt="Amrutham by Padma Catering" style={{ height: 44, objectFit: 'contain', borderRadius: 10 }} />
-        </NavLink>
+        </a>
 
-        {/* Nav links — desktop only */}
+        {/* Nav links — desktop only, main site pages */}
         <div className="web-nav-links">
-          <NavLink to="/setup"   className={({ isActive }) => 'web-nav-link' + (isActive ? ' active' : '')}>Home</NavLink>
-          <NavLink to="/about"   className={({ isActive }) => 'web-nav-link' + (isActive ? ' active' : '')}>About</NavLink>
-          <NavLink to="/contact" className={({ isActive }) => 'web-nav-link' + (isActive ? ' active' : '')}>Contact Us</NavLink>
+          <a href="https://padmacatering.com"          className="web-nav-link">Home</a>
+          <a href="https://padmacatering.com/about"    className="web-nav-link">About</a>
+          <a href="https://padmacatering.com/contact"  className="web-nav-link">Contact Us</a>
+          <NavLink to="/setup" className={({ isActive }) => 'web-nav-link' + (isActive ? ' active' : '')}>Book Now ↗</NavLink>
         </div>
 
-        {/* Right: Book Now + auth */}
+        {/* Right: auth */}
         <div className="web-nav-actions">
-          <NavLink to="/setup"
-            style={{
-              padding: '8px 20px', borderRadius: 'var(--r-pill)',
-              background: 'var(--primary)', color: '#fff', textDecoration: 'none',
-              fontSize: 14, fontWeight: 600, boxShadow: 'var(--shadow-green)',
-              transition: 'opacity 0.15s', whiteSpace: 'nowrap',
-            }}
-            onMouseEnter={e => e.currentTarget.style.opacity = '0.88'}
-            onMouseLeave={e => e.currentTarget.style.opacity = '1'}
-          >
-            Book Now
-          </NavLink>
           {user.name ? (
             <NavLink to="/my-orders"
               style={{
