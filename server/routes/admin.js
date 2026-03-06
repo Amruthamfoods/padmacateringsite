@@ -4,9 +4,25 @@ const { PrismaClient } = require('@prisma/client')
 const xlsx = require('xlsx')
 const authMiddleware = require('../middleware/auth')
 const adminOnly = require('../middleware/adminOnly')
+const path = require('path')
+const fs = require('fs')
 
 const prisma = new PrismaClient()
 const upload = multer({ storage: multer.memoryStorage() })
+
+// Disk storage for package images
+const pkgImgStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    const dir = path.join(__dirname, '../uploads/packages')
+    fs.mkdirSync(dir, { recursive: true })
+    cb(null, dir)
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase() || '.jpg'
+    cb(null, `pkg-${req.params.id}-${Date.now()}${ext}`)
+  },
+})
+const uploadPkgImage = multer({ storage: pkgImgStorage, limits: { fileSize: 5 * 1024 * 1024 } })
 
 // All admin routes require auth + admin role
 router.use(authMiddleware, adminOnly)
@@ -419,7 +435,7 @@ router.post('/menu/packages', async (req, res) => {
 
 router.put('/menu/packages/:id', async (req, res) => {
   try {
-    const { name, eventType, style, type, servesMin, description, basePrice, mealTypes } = req.body
+    const { name, eventType, style, type, servesMin, description, basePrice, mealTypes, image } = req.body
     const data = {}
     if (name) data.name = name
     if (eventType !== undefined) data.eventType = eventType
@@ -429,6 +445,7 @@ router.put('/menu/packages/:id', async (req, res) => {
     if (description !== undefined) data.description = description
     if (basePrice !== undefined) data.basePrice = parseFloat(basePrice)
     if (mealTypes !== undefined && Array.isArray(mealTypes)) data.mealTypes = mealTypes
+    if (image !== undefined) data.image = image
     const pkg = await prisma.menuPackage.update({
       where: { id: parseInt(req.params.id) }, data,
       include: { items: { include: { menuItem: true } } },
@@ -436,6 +453,21 @@ router.put('/menu/packages/:id', async (req, res) => {
     res.json(pkg)
   } catch (err) {
     res.status(500).json({ error: 'Failed to update package' })
+  }
+})
+
+// POST /api/admin/menu/packages/:id/image — upload image file
+router.post('/menu/packages/:id/image', uploadPkgImage.single('image'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded' })
+    const imageUrl = `/api/uploads/packages/${req.file.filename}`
+    const pkg = await prisma.menuPackage.update({
+      where: { id: parseInt(req.params.id) },
+      data: { image: imageUrl },
+    })
+    res.json({ image: pkg.image })
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to upload image' })
   }
 })
 

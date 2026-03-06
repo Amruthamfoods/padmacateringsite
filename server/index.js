@@ -49,6 +49,9 @@ app.use('/api/coupon',  couponRouter)
 app.use('/api/admin',   adminRouter)
 app.use('/api/quote',   quoteRouter)
 
+/* ─── Serve uploaded package images ─── */
+app.use('/api/uploads', express.static(path.join(__dirname, 'uploads')))
+
 /* ─── Serve booking portal static files at /booking ─── */
 const bookingDist = path.join(__dirname, '../booking-portal/dist')
 app.use('/booking', express.static(bookingDist))

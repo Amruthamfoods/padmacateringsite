@@ -72,13 +72,113 @@ function ItemModal({ item, categories, onSave, onClose }) {
   )
 }
 
+function PackageImageModal({ pkg, onSave, onClose }) {
+  const [preview, setPreview]   = useState(pkg.image || null)
+  const [file, setFile]         = useState(null)
+  const [uploading, setUploading] = useState(false)
+  const fileRef = useRef()
+
+  function handleFileChange(e) {
+    const f = e.target.files[0]
+    if (!f) return
+    setFile(f)
+    setPreview(URL.createObjectURL(f))
+  }
+
+  async function handleUpload() {
+    if (!file) { toast.error('Please select an image first'); return }
+    setUploading(true)
+    try {
+      const fd = new FormData()
+      fd.append('image', file)
+      const { data } = await api.post(`/admin/menu/packages/${pkg.id}/image`, fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      toast.success('Image uploaded!')
+      onSave(data.image)
+    } catch { toast.error('Upload failed') }
+    finally { setUploading(false) }
+  }
+
+  async function handleRemove() {
+    try {
+      await api.put(`/admin/menu/packages/${pkg.id}`, { image: null })
+      toast.success('Image removed')
+      onSave(null)
+    } catch { toast.error('Failed to remove image') }
+  }
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-box" style={{ maxWidth: 440 }}>
+        <div className="modal-header">
+          <h3 className="modal-title">Package Image — {pkg.name}</h3>
+          <button className="modal-close" onClick={onClose}><i className="fa-solid fa-xmark" /></button>
+        </div>
+
+        {/* Preview */}
+        <div
+          onClick={() => fileRef.current?.click()}
+          style={{
+            width: '100%', height: 200, borderRadius: 12, overflow: 'hidden',
+            background: 'var(--dark-3)', border: '2px dashed var(--gold-line)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', marginBottom: 16, position: 'relative',
+          }}
+        >
+          {preview ? (
+            <>
+              <img src={preview} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <div style={{
+                position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                opacity: 0, transition: 'opacity 0.15s',
+              }}
+                onMouseEnter={e => e.currentTarget.style.opacity = 1}
+                onMouseLeave={e => e.currentTarget.style.opacity = 0}
+              >
+                <span style={{ color: '#fff', fontSize: '0.85rem', fontWeight: 600 }}>
+                  <i className="fa-solid fa-camera" style={{ marginRight: 6 }} />Click to change
+                </span>
+              </div>
+            </>
+          ) : (
+            <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
+              <i className="fa-solid fa-image" style={{ fontSize: '2.5rem', marginBottom: 10, display: 'block' }} />
+              <span style={{ fontSize: '0.85rem' }}>Click to select image</span>
+            </div>
+          )}
+        </div>
+
+        <input ref={fileRef} type="file" accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} />
+
+        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 16 }}>
+          JPG, PNG, WebP · Max 5 MB · Recommended: 800×600px
+        </p>
+
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={handleUpload} disabled={!file || uploading} className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }}>
+            {uploading ? <><i className="fa-solid fa-circle-notch fa-spin" /> Uploading…</> : <><i className="fa-solid fa-upload" /> Upload Image</>}
+          </button>
+          {pkg.image && (
+            <button onClick={handleRemove} className="btn btn-outline" style={{ color: '#c0392b', borderColor: '#c0392b' }}>
+              <i className="fa-solid fa-trash" />
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function MenuAdminPage() {
-  const [tab, setTab] = useState('items')
-  const [items, setItems] = useState([])
+  const [tab, setTab]           = useState('items')
+  const [items, setItems]       = useState([])
   const [packages, setPackages] = useState([])
   const [categories, setCategories] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [modal, setModal] = useState(null)
+  const [loading, setLoading]   = useState(true)
+  const [modal, setModal]       = useState(null)       // item modal
+  const [pkgImgModal, setPkgImgModal] = useState(null) // package image modal
   const fileRef = useRef()
 
   function load() {
@@ -201,18 +301,36 @@ export default function MenuAdminPage() {
       ) : tab === 'packages' ? (
         <div className="admin-card">
           <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--gold-line)' }}>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{packages.length} packages seeded — edit via database for now</p>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{packages.length} packages — click <i className="fa-solid fa-image" style={{ color: 'var(--gold)' }} /> to set a package image</p>
           </div>
           <div className="admin-table-wrap">
             <table className="admin-table">
               <thead>
-                <tr>{['Name', 'Style', 'Type', 'Min Serves', 'Base Price/pp', 'Items', ''].map(h => <th key={h}>{h}</th>)}</tr>
+                <tr>{['Image', 'Name', 'Type', 'Min Guests', 'Base Price/pp', 'Items', ''].map(h => <th key={h}>{h}</th>)}</tr>
               </thead>
               <tbody>
                 {packages.map(pkg => (
                   <tr key={pkg.id}>
+                    {/* Image thumbnail */}
+                    <td>
+                      <div
+                        onClick={() => setPkgImgModal(pkg)}
+                        style={{
+                          width: 52, height: 40, borderRadius: 8, overflow: 'hidden',
+                          background: 'var(--dark-3)', border: '1px solid var(--gold-line)',
+                          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          flexShrink: 0, position: 'relative',
+                        }}
+                        title="Click to change image"
+                      >
+                        {pkg.image ? (
+                          <img src={pkg.image} alt={pkg.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                          <i className="fa-solid fa-image" style={{ color: 'var(--gold)', fontSize: '1rem' }} />
+                        )}
+                      </div>
+                    </td>
                     <td style={{ color: 'var(--white)', fontWeight: 500 }}>{pkg.name}</td>
-                    <td style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{pkg.style.replace('_', ' ')}</td>
                     <td>
                       <span style={{
                         padding: '2px 8px', borderRadius: 20, fontSize: '0.72rem', fontWeight: 600,
@@ -223,8 +341,13 @@ export default function MenuAdminPage() {
                     <td style={{ color: 'var(--text-muted)' }}>{pkg.servesMin}+</td>
                     <td style={{ fontFamily: 'var(--font-display)', color: 'var(--gold)' }}>₹{pkg.basePrice}</td>
                     <td style={{ color: 'var(--text-muted)' }}>{pkg.items?.length || 0}</td>
-                    <td>
-                      <button onClick={() => deletePackage(pkg.id)} className="action-btn del"><i className="fa-solid fa-trash" /></button>
+                    <td style={{ display: 'flex', gap: 4 }}>
+                      <button onClick={() => setPkgImgModal(pkg)} className="action-btn edit" title="Set image">
+                        <i className="fa-solid fa-image" />
+                      </button>
+                      <button onClick={() => deletePackage(pkg.id)} className="action-btn del">
+                        <i className="fa-solid fa-trash" />
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -256,12 +379,25 @@ export default function MenuAdminPage() {
         </div>
       )}
 
+      {/* Menu item modal */}
       {modal && (
         <ItemModal
           item={modal === 'add' ? null : modal}
           categories={categories}
           onSave={() => { setModal(null); load() }}
           onClose={() => setModal(null)}
+        />
+      )}
+
+      {/* Package image modal */}
+      {pkgImgModal && (
+        <PackageImageModal
+          pkg={pkgImgModal}
+          onSave={(newImage) => {
+            setPackages(ps => ps.map(p => p.id === pkgImgModal.id ? { ...p, image: newImage } : p))
+            setPkgImgModal(null)
+          }}
+          onClose={() => setPkgImgModal(null)}
         />
       )}
     </div>

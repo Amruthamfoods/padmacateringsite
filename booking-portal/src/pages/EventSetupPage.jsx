@@ -279,7 +279,7 @@ export default function EventSetupPage() {
               const tier = pkg.pricingTiers?.slice().sort((a, b) => a.minGuests - b.minGuests)
                 .find(t => guestCount >= t.minGuests && (t.maxGuests == null || guestCount <= t.maxGuests))
                 || pkg.pricingTiers?.[0]
-              const img = pkg.items?.find(pi => pi.menuItem?.image)?.menuItem?.image || THALI_IMGS[idx % THALI_IMGS.length]
+              const img = pkg.image || pkg.items?.find(pi => pi.menuItem?.image)?.menuItem?.image || THALI_IMGS[idx % THALI_IMGS.length]
               const accent = CAT_COLORS[pkgCat] || '#34C759'
               return (
                 <div key={pkg.id} className="pkg-card" onClick={() => setActiveModalPkg(pkg)}>
@@ -387,7 +387,7 @@ function PackageModal({ pkg, selectedDay, initialGuests, onClose, onConfirm }) {
         {/* Hero */}
         <div style={{ height: 210, position: 'relative', flexShrink: 0, overflow: 'hidden' }}>
           {(() => {
-            const img = pkg.items?.find(pi => pi.menuItem?.image)?.menuItem?.image || THALI_IMGS[0]
+            const img = pkg.image || pkg.items?.find(pi => pi.menuItem?.image)?.menuItem?.image || THALI_IMGS[0]
             return <img src={img} alt={pkg.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           })()}
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.65) 0%, transparent 55%)' }} />
