@@ -38,7 +38,20 @@ const TIME_SLOT_GROUPS = [
 
 const CAT_COLORS = { BOX: '#34C759', BULK: '#FF9500', CATERING: '#007AFF' }
 const CAT_LABELS = { BOX: 'Meal Box', BULK: 'Bulk Delivery', CATERING: 'Full Catering' }
-const EMOJIS     = ['🍛', '🍱', '🥘', '🍲', '🫕', '🥗', '🍜', '🍝']
+
+// Thali & Indian food fallback images (Unsplash)
+const THALI_IMGS = [
+  'https://images.unsplash.com/photo-1567188040759-fb8a883dc6d8?w=600&auto=format&q=80', // thali spread
+  'https://images.unsplash.com/photo-1596797038530-2c107229654b?w=600&auto=format&q=80', // biryani
+  'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=600&auto=format&q=80', // Indian curry bowls
+  'https://images.unsplash.com/photo-1546833998-877b37c2e5c6?w=600&auto=format&q=80', // South Indian thali
+  'https://images.unsplash.com/photo-1631515243349-e0cb75fb8d3a?w=600&auto=format&q=80', // dal & roti
+  'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=600&auto=format&q=80', // Indian food spread
+  'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=600&auto=format&q=80', // veg thali
+  'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=600&auto=format&q=80', // breakfast platter
+  'https://images.unsplash.com/photo-1630383249896-424e482df921?w=600&auto=format&q=80', // dosa
+  'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&auto=format&q=80', // feast spread
+]
 
 function toDateStr(d) { return d.toISOString().split('T')[0] }
 const TODAY = toDateStr(new Date())
@@ -266,16 +279,13 @@ export default function EventSetupPage() {
               const tier = pkg.pricingTiers?.slice().sort((a, b) => a.minGuests - b.minGuests)
                 .find(t => guestCount >= t.minGuests && (t.maxGuests == null || guestCount <= t.maxGuests))
                 || pkg.pricingTiers?.[0]
-              const img = pkg.items?.find(pi => pi.menuItem?.image)?.menuItem?.image
+              const img = pkg.items?.find(pi => pi.menuItem?.image)?.menuItem?.image || THALI_IMGS[idx % THALI_IMGS.length]
               const accent = CAT_COLORS[pkgCat] || '#34C759'
               return (
                 <div key={pkg.id} className="pkg-card" onClick={() => setActiveModalPkg(pkg)}>
-                  {/* Image / placeholder */}
-                  <div style={{ height: 148, background: img ? 'transparent' : `linear-gradient(135deg, ${accent}cc, ${accent})`, position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {img
-                      ? <img src={img} alt={pkg.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      : <span style={{ fontSize: 48, filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.18))' }}>{EMOJIS[idx % EMOJIS.length]}</span>
-                    }
+                  {/* Image */}
+                  <div style={{ height: 148, position: 'relative', overflow: 'hidden' }}>
+                    <img src={img} alt={pkg.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.42) 0%, transparent 55%)' }} />
 
                     {/* Category badge */}
@@ -375,12 +385,10 @@ function PackageModal({ pkg, selectedDay, initialGuests, onClose, onConfirm }) {
         </div>
 
         {/* Hero */}
-        <div style={{ height: 210, position: 'relative', background: `linear-gradient(135deg, ${accent}cc, ${accent})`, flexShrink: 0, overflow: 'hidden' }}>
+        <div style={{ height: 210, position: 'relative', flexShrink: 0, overflow: 'hidden' }}>
           {(() => {
-            const img = pkg.items?.find(pi => pi.menuItem?.image)?.menuItem?.image
-            return img
-              ? <img src={img} alt={pkg.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 80 }}>🍛</div>
+            const img = pkg.items?.find(pi => pi.menuItem?.image)?.menuItem?.image || THALI_IMGS[0]
+            return <img src={img} alt={pkg.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           })()}
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.65) 0%, transparent 55%)' }} />
           <div style={{ position: 'absolute', bottom: 18, left: 20, right: 54 }}>
