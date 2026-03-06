@@ -24,7 +24,7 @@ function WebNav() {
 
         {/* Logo → back to main site */}
         <a href="https://padmacatering.com" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0, marginRight: 'auto' }}>
-          <img src="/amrutham-logo.png" alt="Amrutham by Padma Catering" style={{ height: 44, objectFit: 'contain', borderRadius: 10 }} />
+          <img src="/amrutham-logo.png?v=2" alt="Amrutham by Padma Catering" style={{ height: 44, objectFit: 'contain', borderRadius: 10 }} />
         </a>
 
         {/* Nav links — desktop only, main site pages */}
