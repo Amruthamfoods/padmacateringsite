@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import api from '../lib/api'
@@ -36,19 +36,11 @@ const TIME_SLOT_GROUPS = [
   { label: 'Dinner',    slots: ['6:30 PM - 7:00 PM', '7:00 PM - 7:30 PM', '7:30 PM - 8:00 PM', '8:00 PM - 8:30 PM'] },
 ]
 
-const DAY_SHORT  = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
-const MONTHS     = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-const MONTHS_FULL = ['January','February','March','April','May','June','July','August','September','October','November','December']
 
 const CAT_COLORS = { BOX: '#34C759', BULK: '#FF9500', CATERING: '#007AFF' }
 const CAT_LABELS = { BOX: 'Meal Box', BULK: 'Bulk Delivery', CATERING: 'Full Catering' }
 const EMOJIS     = ['🍛', '🍱', '🥘', '🍲', '🫕', '🥗', '🍜', '🍝']
 
-function get90Days() {
-  return Array.from({ length: 90 }, (_, i) => {
-    const d = new Date(); d.setDate(d.getDate() + i); return d
-  })
-}
 function toDateStr(d) { return d.toISOString().split('T')[0] }
 
 const TODAY = toDateStr(new Date())
@@ -62,24 +54,15 @@ export default function EventSetupPage() {
   const [category,       setCategory]       = useState('ALL')
   const [eventType,      setEventType]      = useState('ALL')
   const [mealTab,        setMealTab]        = useState('All')
-  const [selectedDay,    setSelectedDay]    = useState(eventDetails.eventDate || TODAY)
+  const [selectedDay]                        = useState(eventDetails.eventDate || TODAY)
   const [guestCount,     setGuestCount]     = useState(eventDetails.guestCount || 25)
   const [activeModalPkg, setActiveModalPkg] = useState(null)
   const [search,         setSearch]         = useState('')
-  const dateRef = useRef(null)
-  const allDays = get90Days()
-
+  const [editingGuests,  setEditingGuests]  = useState(false)
+  const [guestInput,     setGuestInput]     = useState('')
   const userName = (() => { try { return JSON.parse(localStorage.getItem('padma_user') || '{}').name?.split(' ')[0] || '' } catch { return '' } })()
   const hour = new Date().getHours()
   const greeting = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening'
-
-  // Group 90 days by month
-  const monthGroups = allDays.reduce((acc, d) => {
-    const key = `${d.getFullYear()}-${d.getMonth()}`
-    if (!acc.find(g => g.key === key)) acc.push({ key, label: MONTHS_FULL[d.getMonth()], days: [] })
-    acc.find(g => g.key === key).days.push(d)
-    return acc
-  }, [])
 
   useEffect(() => {
     api.get('/menu/packages')
@@ -91,14 +74,6 @@ export default function EventSetupPage() {
   useEffect(() => {
     setEventDetails({ ...eventDetails, guestCount, eventDate: selectedDay })
   }, [guestCount, selectedDay])
-
-  useEffect(() => {
-    if (!dateRef.current) return
-    setTimeout(() => {
-      const sel = dateRef.current?.querySelector('[data-today="true"]')
-      if (sel) sel.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
-    }, 200)
-  }, [])
 
   const filteredPkgs = packages.filter(pkg => {
     if (search && !pkg.name.toLowerCase().includes(search.toLowerCase())) return false
@@ -169,58 +144,6 @@ export default function EventSetupPage() {
     guestBtn: (active) => ({ width: 28, height: 28, borderRadius: '50%', border: 'none', background: active ? 'var(--primary)' : 'var(--fill-tertiary)', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: active ? '#fff' : 'var(--heading)', lineHeight: 1, fontFamily: 'inherit' }),
     guestNum: { fontWeight: 700, fontSize: 17, color: 'var(--heading)', minWidth: 30, textAlign: 'center' },
   }
-
-  // ── Date picker strip (shared between sidebar and mobile) ──
-  const DateStrip = () => (
-    <div style={{ overflowX: 'auto', scrollbarWidth: 'none', marginLeft: -4, paddingLeft: 4 }}>
-      <div ref={dateRef} style={{ display: 'flex', gap: 0, width: 'max-content', paddingBottom: 4 }}>
-        {monthGroups.map(group => (
-          <div key={group.key} style={{ display: 'flex', alignItems: 'center' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', width: 24, flexShrink: 0 }}>
-              <span style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)', fontSize: 9, fontWeight: 700, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.8 }}>
-                {group.label.slice(0, 3)}
-              </span>
-            </div>
-            {group.days.map(d => {
-              const ds = toDateStr(d)
-              const isSel   = ds === selectedDay
-              const isToday = ds === TODAY
-              const isPast  = ds < TODAY
-              return (
-                <button
-                  key={ds}
-                  data-today={isToday}
-                  onClick={() => !isPast && setSelectedDay(ds)}
-                  disabled={isPast}
-                  style={{
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                    width: 40, height: 56, flexShrink: 0, margin: '0 1px',
-                    borderRadius: 10, border: 'none', cursor: isPast ? 'default' : 'pointer',
-                    background: isSel ? 'var(--primary)' : 'transparent',
-                    transition: 'all 0.15s var(--ease)', opacity: isPast ? 0.28 : 1,
-                  }}
-                >
-                  <span style={{ fontSize: 10, fontWeight: 500, color: isSel ? 'rgba(255,255,255,0.8)' : 'var(--muted)', marginBottom: 2 }}>
-                    {DAY_SHORT[d.getDay()]}
-                  </span>
-                  <div style={{
-                    width: 32, height: 32, borderRadius: '50%',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    background: isSel ? 'rgba(255,255,255,0.22)' : isToday ? 'var(--fill-tertiary)' : 'transparent',
-                    border: isToday && !isSel ? '1.5px solid var(--primary)' : '1.5px solid transparent',
-                  }}>
-                    <span style={{ fontSize: 15, fontWeight: isSel || isToday ? 700 : 400, color: isSel ? '#fff' : isToday ? 'var(--primary)' : 'var(--heading)' }}>
-                      {d.getDate()}
-                    </span>
-                  </div>
-                </button>
-              )
-            })}
-          </div>
-        ))}
-      </div>
-    </div>
-  )
 
   return (
     <div className="page-outer">
@@ -317,21 +240,26 @@ export default function EventSetupPage() {
             <div style={{ background: 'var(--bg)', borderRadius: 14, padding: '14px 18px', boxShadow: 'var(--shadow-sm)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
               <span style={{ fontSize: 15, fontWeight: 500, color: 'var(--heading)' }}>Guests</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <button onClick={() => setGuestCount(v => Math.max(25, v - 5))} style={S.guestBtn(false)}>−</button>
-                <span style={{ fontWeight: 700, fontSize: 20, color: 'var(--heading)', minWidth: 36, textAlign: 'center' }}>{guestCount}</span>
-                <button onClick={() => setGuestCount(v => v + 5)} style={S.guestBtn(true)}>+</button>
+                <button onClick={() => setGuestCount(v => Math.max(1, v > 25 ? v - 5 : v - 1))} style={S.guestBtn(false)}>−</button>
+                {editingGuests ? (
+                  <input
+                    autoFocus
+                    type="number"
+                    value={guestInput}
+                    onChange={e => setGuestInput(e.target.value)}
+                    onBlur={() => { const n = parseInt(guestInput); if (!isNaN(n) && n > 0) setGuestCount(n); setEditingGuests(false) }}
+                    onKeyDown={e => { if (e.key === 'Enter') e.target.blur() }}
+                    style={{ fontWeight: 700, fontSize: 18, color: 'var(--heading)', width: 52, textAlign: 'center', border: '1.5px solid var(--primary)', borderRadius: 8, padding: '2px 4px', outline: 'none', fontFamily: 'inherit' }}
+                  />
+                ) : (
+                  <span
+                    onClick={() => { setGuestInput(String(guestCount)); setEditingGuests(true) }}
+                    title="Click to edit"
+                    style={{ fontWeight: 700, fontSize: 20, color: 'var(--heading)', minWidth: 36, textAlign: 'center', cursor: 'text', borderBottom: '1.5px dashed var(--primary)' }}
+                  >{guestCount}</span>
+                )}
+                <button onClick={() => setGuestCount(v => v >= 25 ? v + 5 : v + 1)} style={S.guestBtn(true)}>+</button>
               </div>
-            </div>
-
-            {/* Date picker */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '18px 0 8px' }}>
-              <p style={{ ...S.sectionLabel, margin: 0 }}>Select Date</p>
-              <span style={{ color: 'var(--primary)', fontSize: 13, fontWeight: 600 }}>
-                {MONTHS[new Date(selectedDay + 'T00:00:00').getMonth()]} {new Date(selectedDay + 'T00:00:00').getFullYear()}
-              </span>
-            </div>
-            <div style={{ background: 'var(--bg)', borderRadius: 14, padding: '8px 4px', boxShadow: 'var(--shadow-sm)', overflow: 'hidden' }}>
-              <DateStrip />
             </div>
 
             {/* Meal time */}
@@ -518,7 +446,7 @@ function PackageModal({ pkg, selectedDay, guestCount, onClose, onConfirm }) {
           <div style={{ background: 'var(--bg-page)', borderRadius: 12, overflow: 'hidden', marginBottom: 16 }}>
             <div style={{ padding: '12px 14px', borderBottom: '0.5px solid var(--separator-nm)' }}>
               <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Event Date</p>
-              <input type="date" value={eventDate} min={todayStr} onChange={e => setEventDate(e.target.value)} style={inputStyle} />
+              <input type="date" value={eventDate} min={todayStr} onChange={e => setEventDate(e.target.value)} onClick={e => { try { e.target.showPicker() } catch(_) {} }} style={{ ...inputStyle, cursor: 'pointer' }} />
             </div>
             <div style={{ padding: '12px 14px' }}>
               <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Time Slot</p>
