@@ -9,7 +9,6 @@ export default function SettingsPage() {
   const [adding, setAdding] = useState(false)
   const [newDate, setNewDate] = useState('')
   const [newReason, setNewReason] = useState('')
-  const [newSlots, setNewSlots] = useState([])
   const [gstRate, setGstRate] = useState('5')
   const [minDays, setMinDays] = useState('3')
 
@@ -24,9 +23,9 @@ export default function SettingsPage() {
     if (!newDate) { toast.error('Select a date'); return }
     setAdding(true)
     try {
-      const { data } = await api.post('/admin/blocked-dates', { date: newDate, reason: newReason, blockedSlots: newSlots })
+      const { data } = await api.post('/admin/blocked-dates', { date: newDate, reason: newReason })
       setBlockedDates(d => [...d, data])
-      setNewDate(''); setNewReason(''); setNewSlots([])
+      setNewDate(''); setNewReason('')
       toast.success('Date blocked')
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to block date')
@@ -106,7 +105,7 @@ export default function SettingsPage() {
 
         <div style={{ padding: '0 24px 20px' }}>
           {/* Add row */}
-          <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
             <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)}
               className="admin-input" style={{ colorScheme: 'dark', width: 160 }} />
             <input type="text" value={newReason} onChange={e => setNewReason(e.target.value)}
@@ -114,19 +113,6 @@ export default function SettingsPage() {
             <button onClick={addBlockedDate} disabled={adding} className="btn btn-primary" style={{ fontSize: '0.82rem', padding: '8px 16px' }}>
               {adding ? <><i className="fa-solid fa-circle-notch fa-spin" /> Adding…</> : <><i className="fa-solid fa-ban" /> Block Date</>}
             </button>
-          </div>
-          <div style={{ display: 'flex', gap: 12, marginBottom: 20, alignItems: 'center' }}>
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-faint)' }}>Specific Slots to Block (Optional - leave empty to block whole day):</span>
-            {['Breakfast', 'Lunch', 'Snacks', 'Dinner'].map(meal => (
-              <label key={meal} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', cursor: 'pointer', color: 'var(--text-warm)' }}>
-                <input
-                  type="checkbox"
-                  checked={newSlots.includes(meal)}
-                  onChange={e => setNewSlots(s => e.target.checked ? [...s, meal] : s.filter(x => x !== meal))}
-                />
-                {meal}
-              </label>
-            ))}
           </div>
 
           {/* List */}
@@ -140,17 +126,9 @@ export default function SettingsPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {blockedDates.map(bd => (
                 <div key={bd.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--dark-2)', border: '1px solid var(--gold-line)', borderRadius: 8, padding: '10px 14px' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <div>
-                      <span style={{ fontSize: '0.85rem', color: 'var(--text-warm)', fontWeight: 500 }}>{format(new Date(bd.date), 'dd MMMM yyyy')}</span>
-                      {bd.reason && <span style={{ fontSize: '0.75rem', color: 'var(--text-faint)', marginLeft: 10 }}>— {bd.reason}</span>}
-                    </div>
-                    {bd.blockedSlots?.length > 0 && (
-                      <div style={{ fontSize: '0.75rem', color: '#f39c12' }}>
-                        <i className="fa-solid fa-clock" style={{ marginRight: 4 }} />
-                        Blocked Slots: {bd.blockedSlots.join(', ')}
-                      </div>
-                    )}
+                  <div>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--text-warm)', fontWeight: 500 }}>{format(new Date(bd.date), 'dd MMMM yyyy')}</span>
+                    {bd.reason && <span style={{ fontSize: '0.75rem', color: 'var(--text-faint)', marginLeft: 10 }}>— {bd.reason}</span>}
                   </div>
                   <button onClick={() => removeBlockedDate(bd.id)}
                     style={{ background: 'none', border: 'none', color: '#c0392b', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', padding: '2px 8px' }}>

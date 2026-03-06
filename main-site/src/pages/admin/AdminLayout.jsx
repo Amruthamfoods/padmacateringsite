@@ -5,7 +5,6 @@ import useAuthStore from '../../store/authStore'
 const NAV = [
   { to: '/admin', label: 'Dashboard', icon: 'fa-solid fa-gauge', end: true },
   { to: '/admin/bookings', label: 'Bookings', icon: 'fa-solid fa-calendar-check' },
-  { to: '/admin/quotes', label: 'Quote Requests', icon: 'fa-solid fa-file-lines' },
   { to: '/admin/menu', label: 'Menu Manager', icon: 'fa-solid fa-bowl-rice' },
   { to: '/admin/coupons', label: 'Coupons', icon: 'fa-solid fa-tag' },
   { to: '/admin/customers', label: 'Customers', icon: 'fa-solid fa-users' },

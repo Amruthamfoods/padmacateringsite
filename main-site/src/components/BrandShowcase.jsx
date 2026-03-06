@@ -1,39 +1,85 @@
-const PLANS = [
-  { id: 'tray', name: 'Meal Tray', price: '₹180', unit: 'per tray', tag: 'Min 10 trays', active: false, features: ['Veg / Non-Veg options', 'Breakfast, Lunch or Dinner', 'Individual hygienic packs', 'Delivery included'] },
-  { id: 'bulk', name: 'Bulk Delivery', price: '₹250', unit: 'per person', tag: 'Min 25 guests', active: true, features: ['Separate container per dish', 'South & North Indian', 'Optional serving staff', 'On-time delivery'] },
-  { id: 'catering', name: 'Full Catering', price: '₹450', unit: 'per person', tag: 'Min 50 guests', active: false, features: ['Full buffet setup', 'Trained serving staff', 'Live counter options', 'Post-event cleanup'] },
-]
 export default function BrandShowcase({ onBookNow }) {
   return (
-    <section style={{ background: 'var(--bg)', padding: '96px 0' }}>
+    <section id="brands" className="section brands-section">
       <div className="container">
-        <div style={{ textAlign: 'center', marginBottom: 52 }}>
-          <div style={{ display: 'inline-block', background: 'var(--primary-bg)', border: '1px solid var(--primary-light)', borderRadius: 'var(--r-pill)', padding: '5px 16px', fontSize: '0.8rem', fontWeight: 600, color: 'var(--primary-dark)', marginBottom: 14 }}>Pricing</div>
-          <h2 style={{ fontWeight: 800, fontSize: 'clamp(1.8rem, 4vw, 2.6rem)', color: 'var(--heading)', marginBottom: 12 }}>Choose the Plan That Works Best for You</h2>
-          <p style={{ color: 'var(--muted)', fontSize: '1.05rem', maxWidth: 440, margin: '0 auto' }}>Flexible pricing for every event size</p>
+        <div className="centered reveal">
+          <span className="section-label">Two Distinct Experiences</span>
+          <h2 className="section-title">One Family, Two <em>Brands</em></h2>
+          <div className="section-divider" style={{ maxWidth: 300, margin: '0 auto 56px' }}>
+            <div className="dot" />
+          </div>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24, maxWidth: 920, margin: '0 auto' }}>
-          {PLANS.map(p => (
-            <div key={p.id} style={{ borderRadius: 'var(--r-xl)', padding: '32px 28px', background: p.active ? 'var(--primary)' : 'white', boxShadow: p.active ? 'var(--shadow-green)' : 'var(--shadow-sm)', border: p.active ? 'none' : '1px solid var(--border-light)', position: 'relative' }}>
-              {p.active && <div style={{ position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)', background: 'var(--heading)', color: 'white', borderRadius: 'var(--r-pill)', padding: '4px 16px', fontSize: '0.72rem', fontWeight: 700, whiteSpace: 'nowrap' }}>MOST POPULAR</div>}
-              <div style={{ fontWeight: 700, fontSize: '0.72rem', color: p.active ? 'rgba(0,0,0,0.5)' : 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>{p.tag}</div>
-              <h3 style={{ fontWeight: 800, fontSize: '1.25rem', color: 'var(--heading)', marginBottom: 4 }}>{p.name}</h3>
-              <div style={{ marginBottom: 24 }}>
-                <span style={{ fontWeight: 800, fontSize: '2.4rem', color: 'var(--heading)' }}>{p.price}</span>
-                <span style={{ fontSize: '0.88rem', color: p.active ? 'rgba(0,0,0,0.5)' : 'var(--muted)', marginLeft: 4 }}>{p.unit}</span>
+
+        <div className="brands-grid">
+
+          {/* Padma Catering */}
+          <div className="brand-card reveal-l">
+            <div className="brand-card-img">
+              <img
+                src="https://images.unsplash.com/photo-1555244162-803834f70033?w=900&auto=format&q=80"
+                alt="Padma Catering"
+              />
+              <div className="brand-card-overlay" />
+            </div>
+            <div className="brand-card-body">
+              <div className="brand-logo-wrap">
+                <img src={`${import.meta.env.BASE_URL}img/logo-large.png`} alt="Padma Catering" className="brand-logo" />
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 28 }}>
-                {p.features.map(f => (
-                  <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.88rem', color: p.active ? 'var(--heading)' : 'var(--body-text)' }}>
-                    <i className="fa-solid fa-check" style={{ color: p.active ? 'var(--heading)' : 'var(--primary-dark)', fontSize: '0.75rem', flexShrink: 0 }} />{f}
-                  </div>
-                ))}
-              </div>
-              <button onClick={onBookNow} style={{ width: '100%', padding: '12px', borderRadius: 'var(--r-pill)', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '0.9rem', background: p.active ? 'var(--heading)' : 'var(--primary-bg)', color: p.active ? 'white' : 'var(--primary-dark)', transition: 'all 0.2s' }}>
-                Get Started <i className="fa-solid fa-arrow-right" style={{ marginLeft: 6 }} />
+              <div className="brand-tag standard">Standard Service</div>
+              <h3 className="brand-name">Padma Catering</h3>
+              <p className="brand-since">Est. 1993</p>
+              <p className="brand-desc">
+                Our flagship catering service trusted by Visakhapatnam for over 30 years.
+                From intimate family gatherings to large-scale weddings and corporate events,
+                Padma Catering delivers authentic flavours, generous portions and dependable
+                service — every single time.
+              </p>
+              <ul className="brand-features">
+                <li><i className="fa-solid fa-check" />Multi-cuisine buffets & live counters</li>
+                <li><i className="fa-solid fa-check" />Weddings, corporate & social events</li>
+                <li><i className="fa-solid fa-check" />25 to 2500+ guests</li>
+                <li><i className="fa-solid fa-check" />Full event turnkey service</li>
+              </ul>
+              <button className="btn btn-outline brand-btn" onClick={onBookNow}>
+                <i className="fa-solid fa-calendar-check" /> Book Padma Catering
               </button>
             </div>
-          ))}
+          </div>
+
+          {/* Amrutham */}
+          <div className="brand-card brand-card-premium reveal-r">
+            <div className="brand-card-img">
+              <img
+                src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=900&auto=format&q=80"
+                alt="Amrutham Premium Catering"
+              />
+              <div className="brand-card-overlay" />
+            </div>
+            <div className="brand-card-body">
+              <div className="brand-logo-wrap">
+                <img src={`${import.meta.env.BASE_URL}img/amrutham-logo.png`} alt="Amrutham" className="brand-logo" />
+              </div>
+              <div className="brand-tag premium">Premium Format</div>
+              <h3 className="brand-name">Amrutham</h3>
+              <p className="brand-since">Est. 2019</p>
+              <p className="brand-desc">
+                Amrutham — meaning <em>divine nectar</em> — is our elevated catering format
+                for those who seek an extraordinary dining experience. Crafted for discerning
+                hosts who want refined presentation, curated menus, and white-glove hospitality
+                at their most special occasions.
+              </p>
+              <ul className="brand-features">
+                <li><i className="fa-solid fa-check" />Curated bespoke menus</li>
+                <li><i className="fa-solid fa-check" />Fine dining presentation & plating</li>
+                <li><i className="fa-solid fa-check" />Luxury weddings & elite events</li>
+                <li><i className="fa-solid fa-check" />Dedicated event concierge</li>
+              </ul>
+              <button className="btn btn-primary brand-btn" onClick={onBookNow}>
+                <i className="fa-solid fa-star" /> Book Amrutham
+              </button>
+            </div>
+          </div>
+
         </div>
       </div>
     </section>

@@ -1,66 +1,54 @@
-@import 'tailwindcss';
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import "tailwindcss";
 
 /* ================================================
-   CSS VARIABLES — Amrutham by Padma Catering
-   Public Site: Light Green (Figma)
-   Admin Panel: Dark Gold (preserved)
+   CSS VARIABLES — Elegant Dark Restaurant
+   Inspired by: Food Tales Catering
+   Near-black charcoal + Warm Champagne Gold
 ================================================ */
 :root {
-  /* Public Site: Green Theme */
-  --primary:        #9AD983;
-  --primary-dark:   #7BC565;
-  --primary-light:  #C5EBB5;
-  --primary-glow:   rgba(154,217,131,0.18);
-  --primary-bg:     rgba(154,217,131,0.10);
-  --bg:             #FFFFFF;
-  --bg-page:        #FAFAFA;
-  --bg-light:       #F5F5F5;
-  --bg-section:     #F9FBF7;
-  --heading:        #323434;
-  --body-text:      #555757;
-  --muted:          #888888;
-  --faint:          #BBBBBB;
-  --white:          #FFFFFF;
-  --danger:         #FF8989;
-  --star:           #FFC804;
-  --border:         #E8E8E8;
-  --border-light:   #F0F0F0;
-  --font:           'Inter', sans-serif;
-  --r-sm:           8px;
-  --r:              12px;
-  --r-lg:           16px;
-  --r-xl:           24px;
-  --r-pill:         999px;
-  --shadow-sm:      0 2px 8px rgba(0,0,0,0.05);
-  --shadow:         0 4px 16px rgba(0,0,0,0.08);
-  --shadow-md:      0 8px 32px rgba(0,0,0,0.10);
-  --shadow-lg:      0 16px 48px rgba(0,0,0,0.12);
-  --shadow-green:   0 8px 32px rgba(154,217,131,0.35);
-  --ease:           cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  --ease-out:       cubic-bezier(0.0, 0.0, 0.2, 1.0);
+  /* Backgrounds — refined dark charcoal */
+  --dark-1:        #171819;   /* Body background */
+  --dark-2:        #1C1E1F;   /* Section alt */
+  --dark-3:        #232526;   /* Card / surface */
+  --dark-4:        #2C2E30;   /* Elevated card */
+  --dark-5:        #333638;   /* Hover surface */
 
-  /* Admin Panel: Dark Gold (preserved) */
-  --dark-1:        #171819;
-  --dark-2:        #1C1E1F;
-  --dark-3:        #232526;
-  --dark-4:        #2C2E30;
-  --dark-5:        #333638;
-  --gold:          #E4C590;
-  --gold-dim:      #C8A874;
-  --gold-bright:   #F0D8A8;
-  --gold-pale:     #F5ECD8;
+  /* Champagne Gold accent — warm, not yellow */
+  --gold:          #E4C590;   /* Primary accent */
+  --gold-dim:      #C8A874;   /* Subdued */
+  --gold-bright:   #F0D8A8;   /* Hover / highlight */
+  --gold-pale:     #F5ECD8;   /* Very light accent */
+
+  /* Separator/subtle accent */
   --gold-line:     rgba(228,197,144,0.25);
   --gold-glow:     rgba(228,197,144,0.12);
+
+  /* Typography */
+  --white:         #FFFFFF;
   --text-warm:     #D4C4A8;
   --text-muted:    #888580;
   --text-faint:    #5A5856;
+
+  /* Fonts — matching Food Tales */
   --font-display:  'Forum', 'Cormorant Garamond', Georgia, serif;
-  --font-body:     'Inter', sans-serif;
+  --font-body:     'DM Sans', sans-serif;
+
+  /* Motion */
+  --ease:          cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --ease-out:      cubic-bezier(0.0, 0.0, 0.2, 1.0);
+
+  /* Geometry */
   --radius:        4px;
   --radius-sm:     3px;
   --radius-lg:     8px;
+
+  /* Shadows */
+  --shadow-sm:     0 2px 12px rgba(0,0,0,0.35);
+  --shadow-md:     0 8px 32px rgba(0,0,0,0.5);
+  --shadow-lg:     0 20px 60px rgba(0,0,0,0.65);
   --shadow-gold:   0 8px 40px rgba(228,197,144,0.2);
+
+  /* Glass */
   --glass:         rgba(255,255,255,0.03);
   --glass-border:  rgba(255,255,255,0.07);
 }
@@ -71,11 +59,11 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
 body {
-  font-family: var(--font);
-  background: var(--bg);
-  color: var(--body-text);
+  font-family: var(--font-body);
+  background: var(--dark-1);
+  color: var(--text-warm);
   overflow-x: hidden;
-  line-height: 1.7;
+  line-height: 1.75;
   font-weight: 400;
   font-size: 15px;
 }
@@ -86,56 +74,141 @@ ul { list-style: none; }
 /* ================================================
    LAYOUT
 ================================================ */
-.container { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
-@media (max-width: 768px) { .container { padding: 0 20px; } }
+.container {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+.section     { padding: 120px 0; }
+.section-sm  { padding: 72px 0; }
+.centered    { text-align: center; }
+
+/* ================================================
+   TYPOGRAPHY HELPERS
+================================================ */
+.section-label {
+  font-family: var(--font-body);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.5em;
+  text-transform: uppercase;
+  color: var(--gold);
+  display: block;
+  margin-bottom: 16px;
+}
+.section-title {
+  font-family: var(--font-display);
+  font-size: clamp(2.2rem, 5vw, 4rem);
+  font-weight: 400;
+  color: var(--white);
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+}
+.section-title em {
+  font-style: italic;
+  color: var(--gold);
+}
+/* Ornate divider — like Food Tales */
+.section-divider {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 20px 0 40px;
+}
+.section-divider::before,
+.section-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--gold-line);
+}
+.section-divider .dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--gold);
+  flex-shrink: 0;
+  box-shadow: 0 0 8px rgba(228,197,144,0.5);
+}
+/* Diamond ornament variant */
+.ornament {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--gold);
+  font-size: 0.45rem;
+  margin: 16px 0 36px;
+}
+.ornament::before,
+.ornament::after {
+  content: '— ✦ —';
+  color: var(--gold-dim);
+  font-size: 0.55rem;
+  letter-spacing: 0.3em;
+}
 
 /* ================================================
    SCROLL REVEAL
 ================================================ */
 .reveal, .reveal-l, .reveal-r {
   opacity: 0;
-  transition: opacity 0.8s var(--ease), transform 0.8s var(--ease);
+  transition: opacity 0.9s var(--ease), transform 0.9s var(--ease);
 }
-.reveal   { transform: translateY(32px); }
-.reveal-l { transform: translateX(-32px); }
-.reveal-r { transform: translateX(32px); }
+.reveal   { transform: translateY(40px); }
+.reveal-l { transform: translateX(-40px); }
+.reveal-r { transform: translateX(40px); }
 .reveal.in, .reveal-l.in, .reveal-r.in { opacity: 1; transform: none; }
 .d1 { transition-delay: 0.08s; }
-.d2 { transition-delay: 0.16s; }
-.d3 { transition-delay: 0.24s; }
-.d4 { transition-delay: 0.32s; }
-.d5 { transition-delay: 0.40s; }
+.d2 { transition-delay: 0.18s; }
+.d3 { transition-delay: 0.28s; }
+.d4 { transition-delay: 0.38s; }
 
 /* ================================================
-   PUBLIC SITE BUTTONS
-================================================ */
-.site-btn {
-  display: inline-flex; align-items: center; justify-content: center;
-  gap: 8px; padding: 14px 32px; font-family: var(--font);
-  font-size: 0.95rem; font-weight: 600; border-radius: var(--r-pill);
-  border: none; cursor: pointer; transition: all 0.25s var(--ease);
-  white-space: nowrap; text-decoration: none;
-}
-.site-btn-primary { background: var(--primary); color: var(--heading); box-shadow: var(--shadow-green); }
-.site-btn-primary:hover { background: var(--primary-dark); transform: translateY(-2px); box-shadow: 0 12px 40px rgba(154,217,131,0.45); }
-.site-btn-dark { background: var(--heading); color: var(--white); box-shadow: var(--shadow-md); }
-.site-btn-dark:hover { background: #444; transform: translateY(-2px); }
-.site-btn-outline { background: transparent; color: var(--heading); border: 1.5px solid var(--border); }
-.site-btn-outline:hover { border-color: var(--primary); color: var(--primary-dark); background: var(--primary-bg); }
-.site-btn-sm { padding: 10px 22px; font-size: 0.85rem; }
-
-/* ================================================
-   ADMIN BUTTONS (kept for admin panel)
+   BUTTONS
 ================================================ */
 .btn {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 10px 20px; font-family: var(--font-body);
-  font-size: 0.82rem; font-weight: 600; border-radius: var(--radius-lg);
-  border: none; cursor: pointer; transition: all 0.2s var(--ease); white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 14px 36px;
+  font-family: var(--font-body);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  border-radius: 2px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.32s var(--ease);
+  white-space: nowrap;
 }
-.btn-primary { background: var(--gold); color: var(--dark-1); box-shadow: 0 4px 16px rgba(228,197,144,0.25); }
-.btn-primary:hover { background: var(--gold-bright); transform: translateY(-1px); }
-.btn-outline { background: transparent; color: var(--text-warm); border: 1px solid var(--gold-line); }
-.btn-outline:hover { border-color: var(--gold); color: var(--gold); background: var(--gold-glow); }
-.btn-danger { background: #c0392b; color: #fff; }
-.btn-danger:hover { background: #a93226; }
+.btn-primary {
+  background: var(--gold);
+  color: var(--dark-1);
+  box-shadow: 0 4px 20px rgba(228,197,144,0.3);
+}
+.btn-primary:hover {
+  background: var(--gold-bright);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 32px rgba(228,197,144,0.4);
+}
+.btn-marigold {
+  background: var(--gold);
+  color: var(--dark-1);
+  box-shadow: 0 4px 20px rgba(228,197,144,0.25);
+}
+.btn-marigold:hover {
+  background: var(--gold-bright);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 32px rgba(228,197,144,0.38);
+}
+.btn-outline {
+  background: transparent;
+  color: var(--white);
+  border: 1px solid rgba(228,197,144,0.4);
+}
+.btn-outline:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+  transform: translateY(-2px);
+  background: rgba(228,197,144,0.05);
+}

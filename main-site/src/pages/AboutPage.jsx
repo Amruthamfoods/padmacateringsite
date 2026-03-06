@@ -15,10 +15,10 @@ const milestones = [
 ]
 
 const team = [
-  { name: 'Padma Cherukuri', role: 'Founder & Head Chef', img: 'https://images.unsplash.com/photo-1607631568010-a87245c0daf8?w=400&auto=format&q=80', bio: 'The heart and soul of Padma Catering. With 30+ years of culinary mastery, Padma built this brand on one simple belief — food should make people feel at home.' },
-  { name: 'Dasaradh Cherukuri', role: 'General Manager & Head of Operations', img: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&auto=format&q=80', bio: 'Dasaradh ensures every event runs like clockwork — overseeing logistics, staffing, vendor coordination and flawless on-ground execution.' },
-  { name: 'Rohit Cherukuri', role: 'Client Relations Lead & Marketing Head', img: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&auto=format&q=80', bio: 'Rohit is your first point of contact — dedicated to understanding your vision and translating it into the perfect catering experience.' },
-  { name: 'Nalluri Shravani', role: 'Concept Designer & Creative Incharge', img: 'https://images.unsplash.com/photo-1494790108755-2616b332c3c9?w=400&auto=format&q=80', bio: 'Shravani brings creativity and elegance to every setup — crafting visual concepts, themes and presentation that make each event truly memorable.' },
+  { name: 'Padma Cherukuri', role: 'Founder & Head Chef', img: `${import.meta.env.BASE_URL}img/team/padma.png`, bio: 'The heart and soul of Padma Catering. With 30+ years of culinary mastery, Padma built this brand on one simple belief — food should make people feel at home.' },
+  { name: 'Dasaradh Cherukuri', role: 'General Manager & Head of Operations', img: `${import.meta.env.BASE_URL}img/team/dasaradh.png`, bio: 'Dasaradh ensures every event runs like clockwork — overseeing logistics, staffing, vendor coordination and flawless on-ground execution.' },
+  { name: 'Rohit Cherukuri', role: 'Client Relations Lead & Marketing Head', img: `${import.meta.env.BASE_URL}img/team/rohit.jpg`, bio: 'Rohit is your first point of contact — dedicated to understanding your vision and translating it into the perfect catering experience.' },
+  { name: 'Nalluri Shravani', role: 'Concept Designer & Creative Incharge', img: `${import.meta.env.BASE_URL}img/team/shravani.jpg`, bio: 'Shravani brings creativity and elegance to every setup — crafting visual concepts, themes and presentation that make each event truly memorable.' },
 ]
 
 const values = [
