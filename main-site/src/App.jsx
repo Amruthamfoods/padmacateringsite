@@ -61,7 +61,7 @@ function AppInner() {
   const isFullPage = isAdminRoute ||
     ['/login', '/register', '/account'].some(p => pathname === p || pathname.startsWith(p + '/'))
 
-  const goToBooking = () => { window.location.href = '/booking/' }
+  const goToBooking = () => { window.location.href = 'https://booking.padmacatering.com' }
 
   return (
     <>
