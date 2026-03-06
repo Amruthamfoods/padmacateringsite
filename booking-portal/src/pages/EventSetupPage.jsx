@@ -4,29 +4,29 @@ import toast from 'react-hot-toast'
 import api from '../lib/api'
 import { useBookingStore } from '../store/useBookingStore'
 
-const CATEGORIES = [
-  { key: 'ALL',      label: 'All',           icon: '🍽️' },
-  { key: 'BOX',      label: 'Meal Box',      icon: '🥡' },
-  { key: 'BULK',     label: 'Bulk',          icon: '📦' },
-  { key: 'CATERING', label: 'Full Catering', icon: '🍛' },
+const EVENT_TYPES = [
+  { key: 'ALL',        label: 'All Events'  },
+  { key: 'Wedding',    label: 'Wedding'     },
+  { key: 'Engagement', label: 'Engagement'  },
+  { key: 'Birthday',   label: 'Birthday'    },
+  { key: 'Corporate',  label: 'Corporate'   },
+  { key: 'Festival',   label: 'Festival'    },
+  { key: 'Any',        label: 'Other'       },
 ]
 
-const EVENT_TYPES = [
-  { key: 'ALL',        label: 'All',        icon: '✨' },
-  { key: 'Wedding',    label: 'Wedding',    icon: '💒' },
-  { key: 'Engagement', label: 'Engagement', icon: '💍' },
-  { key: 'Birthday',   label: 'Birthday',   icon: '🎂' },
-  { key: 'Corporate',  label: 'Office',     icon: '🏢' },
-  { key: 'Festival',   label: 'Festival',   icon: '🎊' },
-  { key: 'Any',        label: 'Other',      icon: '🌟' },
+const CATEGORIES = [
+  { key: 'ALL',      label: 'All Types'     },
+  { key: 'BOX',      label: 'Meal Box'      },
+  { key: 'BULK',     label: 'Bulk'          },
+  { key: 'CATERING', label: 'Full Catering' },
 ]
 
 const MEAL_TABS = [
-  { key: 'All',       label: 'All',       icon: '🍽️' },
-  { key: 'Breakfast', label: 'Breakfast', icon: '🌅' },
-  { key: 'Lunch',     label: 'Lunch',     icon: '☀️' },
-  { key: 'Snacks',    label: 'Snacks',    icon: '🫙' },
-  { key: 'Dinner',    label: 'Dinner',    icon: '🌙' },
+  { key: 'All',       label: 'Any Meal'  },
+  { key: 'Breakfast', label: 'Breakfast' },
+  { key: 'Lunch',     label: 'Lunch'     },
+  { key: 'Snacks',    label: 'Snacks'    },
+  { key: 'Dinner',    label: 'Dinner'    },
 ]
 
 const TIME_SLOT_GROUPS = [
@@ -43,6 +43,19 @@ const EMOJIS     = ['🍛', '🍱', '🥘', '🍲', '🫕', '🥗', '🍜', '�
 function toDateStr(d) { return d.toISOString().split('T')[0] }
 const TODAY = toDateStr(new Date())
 
+// Minimal SVG icons (Apple/Google style)
+const IconSearch = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+  </svg>
+)
+const IconUsers = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+  </svg>
+)
+
 export default function EventSetupPage() {
   const navigate = useNavigate()
   const { eventDetails, setEventDetails, setMenuPreferences } = useBookingStore()
@@ -56,10 +69,11 @@ export default function EventSetupPage() {
   const [guestCount,     setGuestCount]     = useState(eventDetails.guestCount || 25)
   const [activeModalPkg, setActiveModalPkg] = useState(null)
   const [search,         setSearch]         = useState('')
+  const [searchOpen,     setSearchOpen]     = useState(false)
 
   const userName = (() => { try { return JSON.parse(localStorage.getItem('padma_user') || '{}').name?.split(' ')[0] || '' } catch { return '' } })()
   const hour = new Date().getHours()
-  const greeting = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening'
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
 
   useEffect(() => {
     api.get('/menu/packages')
@@ -74,9 +88,7 @@ export default function EventSetupPage() {
 
   const filteredPkgs = packages.filter(pkg => {
     if (search && !pkg.name.toLowerCase().includes(search.toLowerCase())) return false
-    if (category !== 'ALL') {
-      if ((pkg.eventType || '').split(':')[0] !== category) return false
-    }
+    if (category !== 'ALL' && (pkg.eventType || '').split(':')[0] !== category) return false
     if (eventType !== 'ALL') {
       const raw = pkg.eventType || ''
       const evtPart = raw.includes(':') ? raw.split(':')[1] : raw
@@ -88,22 +100,15 @@ export default function EventSetupPage() {
     return true
   })
 
-  const chip = (active) => ({
-    display: 'flex', alignItems: 'center', gap: 5,
-    padding: '7px 13px', borderRadius: 999, flexShrink: 0,
+  // Apple-style chip on green background
+  const heroChip = (active) => ({
+    padding: '6px 14px', borderRadius: 999, flexShrink: 0,
     border: 'none', cursor: 'pointer', fontFamily: 'inherit',
-    fontWeight: active ? 600 : 500, fontSize: 14, whiteSpace: 'nowrap',
-    background: active ? 'var(--primary)' : 'var(--bg-page)',
-    color: active ? '#fff' : 'var(--heading)',
-    boxShadow: active ? 'var(--shadow-green)' : 'none',
-    transition: 'all 0.15s',
-  })
-
-  const darkChip = (active) => ({
-    ...chip(active),
-    background: active ? 'var(--heading)' : 'var(--bg-page)',
-    color: active ? '#fff' : 'var(--heading)',
-    boxShadow: 'none',
+    fontWeight: active ? 600 : 500, fontSize: 13, whiteSpace: 'nowrap',
+    background: active ? '#fff' : 'rgba(255,255,255,0.15)',
+    color: active ? '#1a7a33' : 'rgba(255,255,255,0.92)',
+    transition: 'all 0.18s',
+    letterSpacing: '-0.01em',
   })
 
   return (
@@ -111,107 +116,147 @@ export default function EventSetupPage() {
       <style>{`
         @keyframes spin    { to { transform: rotate(360deg) } }
         @keyframes slideUp { from { transform: translateY(40px); opacity:0 } to { transform: translateY(0); opacity:1 } }
-        .setup-pkgs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-        .filter-bar { display: flex; align-items: center; background: var(--bg); border-bottom: 0.5px solid var(--separator-nm); position: sticky; top: 0; z-index: 10; }
-        .filter-chips { display: flex; align-items: center; gap: 8px; overflow-x: auto; padding: 10px 16px; scrollbar-width: none; flex: 1; min-width: 0; }
-        .filter-chips::-webkit-scrollbar { display: none; }
-        .filter-sep { width: 1px; height: 20px; background: var(--separator-nm); flex-shrink: 0; }
-        .filter-search { display: flex; align-items: center; gap: 7px; background: var(--fill-tertiary); border-radius: 999px; padding: 8px 14px; flex-shrink: 0; margin-right: 16px; }
-        .filter-search input { border: none; outline: none; background: transparent; font-size: 14px; color: var(--heading); font-family: inherit; width: 120px; }
+        @keyframes fadeIn  { from { opacity:0; transform:scale(0.97) } to { opacity:1; transform:scale(1) } }
+
+        .setup-pkgs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .pkg-card { background: var(--bg); border-radius: 18px; overflow: hidden; cursor: pointer; transition: transform 0.18s, box-shadow 0.18s; box-shadow: 0 1px 4px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.06); }
+        .pkg-card:hover { transform: translateY(-3px); box-shadow: 0 8px 32px rgba(0,0,0,0.13); }
+        .pkg-card:active { transform: scale(0.98); }
+
+        .hero-filters { display: flex; align-items: center; gap: 6px; overflow-x: auto; padding: 0 20px 20px; scrollbar-width: none; }
+        .hero-filters::-webkit-scrollbar { display: none; }
+        .hero-filter-sep { width: 1px; height: 16px; background: rgba(255,255,255,0.25); flex-shrink: 0; margin: 0 2px; }
+
+        .hero-search-pill { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.15); border-radius: 999px; padding: 7px 14px; flex-shrink: 0; border: none; cursor: pointer; color: rgba(255,255,255,0.85); font-family: inherit; font-size: 13px; font-weight: 500; transition: background 0.15s; }
+        .hero-search-pill:hover { background: rgba(255,255,255,0.22); }
+        .hero-search-open { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.2); border-radius: 999px; padding: 7px 14px; flex-shrink: 0; animation: fadeIn 0.15s ease; }
+        .hero-search-open input { border: none; outline: none; background: transparent; font-size: 13px; color: #fff; font-family: inherit; width: 140px; }
+        .hero-search-open input::placeholder { color: rgba(255,255,255,0.6); }
+
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .results-badge { font-size: 12px; font-weight: 600; color: var(--primary); background: var(--primary-bg); padding: '3px 10px'; border-radius: 999px; padding: 3px 10px; }
+
+        @media (min-width: 600px) {
+          .setup-pkgs-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+        }
         @media (min-width: 900px) {
-          .setup-hero { border-radius: 16px; }
-          .setup-pkgs-grid { grid-template-columns: repeat(3, 1fr); gap: 18px; }
+          .setup-pkgs-grid { grid-template-columns: repeat(3, 1fr); gap: 20px; }
         }
         @media (min-width: 1200px) {
           .setup-pkgs-grid { grid-template-columns: repeat(4, 1fr); }
         }
-        div::-webkit-scrollbar { display: none; }
       `}</style>
 
-      {/* ── Hero ── */}
-      <div className="setup-hero" style={{ background: 'linear-gradient(135deg, #34C759 0%, #28A745 100%)', padding: '28px 24px 32px' }}>
-        <div style={{ maxWidth: 1280, margin: '0 auto', display: 'flex', alignItems: 'flex-end', gap: 24, flexWrap: 'wrap' }}>
-          <div style={{ flex: 1, minWidth: 220 }}>
-            <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: 15, fontWeight: 500, margin: '0 0 6px' }}>
-              {greeting}{userName ? `, ${userName}` : ''}!
-            </p>
-            <h2 style={{ color: '#fff', fontSize: 28, fontWeight: 700, margin: 0, lineHeight: 1.15, letterSpacing: -0.5 }}>
-              What are you planning today?
-            </h2>
+      {/* ── Hero with filters inside ── */}
+      <div className="setup-hero" style={{ background: 'linear-gradient(150deg, #3dd068 0%, #28A745 55%, #1e8a38 100%)' }}>
+        <div style={{ maxWidth: 1280, margin: '0 auto' }}>
+
+          {/* Top row: greeting + stats */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '28px 20px 18px', gap: 24 }}>
+            <div>
+              <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: 14, fontWeight: 400, margin: '0 0 6px', letterSpacing: '0.01em' }}>
+                {greeting}{userName ? `, ${userName}` : ''}
+              </p>
+              <h2 style={{ color: '#fff', fontSize: 26, fontWeight: 700, margin: 0, lineHeight: 1.2, letterSpacing: '-0.5px' }}>
+                What are you planning?
+              </h2>
+            </div>
+            <div className="desktop-only" style={{ display: 'flex', gap: 24, flexShrink: 0, paddingTop: 4 }}>
+              {[['5,000+', 'Events'], ['15+', 'Years'], ['Vizag', 'Based']].map(([v, l]) => (
+                <div key={l} style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: 20, fontWeight: 700, color: '#fff', letterSpacing: '-0.5px', lineHeight: 1.1 }}>{v}</div>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.65)', fontWeight: 500, marginTop: 2 }}>{l}</div>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="desktop-only" style={{ display: 'flex', gap: 28, flexShrink: 0, paddingBottom: 4 }}>
-            {[['5,000+', 'Events'], ['15+', 'Years'], ['Vizag', 'Based']].map(([v, l]) => (
-              <div key={l} style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', letterSpacing: -0.5 }}>{v}</div>
-                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}>{l}</div>
-              </div>
+
+          {/* Filter row — all options inside the green bar */}
+          <div className="hero-filters">
+            {/* Event type */}
+            {EVENT_TYPES.map(et => (
+              <button key={et.key} onClick={() => setEventType(et.key)} style={heroChip(eventType === et.key)}>
+                {et.label}
+              </button>
             ))}
+
+            <div className="hero-filter-sep" />
+
+            {/* Package type */}
+            {CATEGORIES.map(cat => (
+              <button key={cat.key} onClick={() => setCategory(cat.key)} style={heroChip(category === cat.key)}>
+                {cat.label}
+              </button>
+            ))}
+
+            <div className="hero-filter-sep" />
+
+            {/* Meal time */}
+            {MEAL_TABS.map(tab => (
+              <button key={tab.key} onClick={() => setMealTab(tab.key)} style={heroChip(mealTab === tab.key)}>
+                {tab.label}
+              </button>
+            ))}
+
+            <div className="hero-filter-sep" />
+
+            {/* Search — compact, always on the right of the scroll */}
+            {searchOpen ? (
+              <div className="hero-search-open">
+                <IconSearch />
+                <input
+                  autoFocus
+                  placeholder="Search packages..."
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  onBlur={() => { if (!search) setSearchOpen(false) }}
+                />
+                {search && (
+                  <button onClick={() => { setSearch(''); setSearchOpen(false) }}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.8)', fontSize: 14, lineHeight: 1, padding: 0 }}>✕</button>
+                )}
+              </div>
+            ) : (
+              <button className="hero-search-pill" onClick={() => setSearchOpen(true)}>
+                <IconSearch />
+                Search
+              </button>
+            )}
           </div>
-        </div>
-      </div>
-
-      {/* ── Sticky filter bar ── */}
-      <div className="filter-bar">
-        <div className="filter-chips">
-          {/* Event type */}
-          {EVENT_TYPES.map(et => (
-            <button key={et.key} onClick={() => setEventType(et.key)} style={chip(eventType === et.key)}>
-              <span style={{ fontSize: 14 }}>{et.icon}</span>{et.label}
-            </button>
-          ))}
-          <div className="filter-sep" />
-          {/* Package category */}
-          {CATEGORIES.map(cat => (
-            <button key={cat.key} onClick={() => setCategory(cat.key)} style={darkChip(category === cat.key)}>
-              <span style={{ fontSize: 14 }}>{cat.icon}</span>{cat.label}
-            </button>
-          ))}
-          <div className="filter-sep" />
-          {/* Meal time */}
-          {MEAL_TABS.map(tab => (
-            <button key={tab.key} onClick={() => setMealTab(tab.key)} style={chip(mealTab === tab.key)}>
-              <span style={{ fontSize: 14 }}>{tab.icon}</span>{tab.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Small search — always visible on the right */}
-        <div className="filter-search">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
-          <input
-            placeholder="Search..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
-          {search && (
-            <button onClick={() => setSearch('')}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: 13, lineHeight: 1, padding: 0, display: 'flex' }}>✕</button>
-          )}
         </div>
       </div>
 
       {/* ── Packages ── */}
       <div className="page-inner">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
-          <span style={{ fontSize: 20, fontWeight: 700, color: 'var(--heading)', letterSpacing: -0.3 }}>Available Packages</span>
-          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--primary)', background: 'var(--primary-bg)', padding: '4px 12px', borderRadius: 999 }}>{filteredPkgs.length} found</span>
+        <div className="section-header">
+          <p style={{ fontSize: 17, fontWeight: 600, color: 'var(--heading)', margin: 0, letterSpacing: '-0.2px' }}>
+            {filteredPkgs.length === packages.length
+              ? 'All Packages'
+              : `${filteredPkgs.length} package${filteredPkgs.length !== 1 ? 's' : ''} found`}
+          </p>
+          {(eventType !== 'ALL' || category !== 'ALL' || mealTab !== 'All' || search) && (
+            <button
+              onClick={() => { setSearch(''); setCategory('ALL'); setEventType('ALL'); setMealTab('All'); setSearchOpen(false) }}
+              style={{ fontSize: 13, fontWeight: 500, color: 'var(--primary)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: '4px 8px' }}
+            >
+              Clear filters
+            </button>
+          )}
         </div>
 
         {loading ? (
           <div style={{ textAlign: 'center', padding: '80px 0' }}>
-            <div style={{ width: 40, height: 40, border: '3px solid var(--primary)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
-            <p style={{ color: 'var(--muted)', fontSize: 15 }}>Loading packages...</p>
+            <div style={{ width: 36, height: 36, border: '2.5px solid var(--primary)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 14px' }} />
+            <p style={{ color: 'var(--muted)', fontSize: 14, fontWeight: 500 }}>Loading packages…</p>
           </div>
         ) : filteredPkgs.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px 20px', background: 'var(--bg)', borderRadius: 16, boxShadow: 'var(--shadow-sm)' }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>🍽️</div>
-            <p style={{ fontWeight: 700, fontSize: 18, color: 'var(--heading)', marginBottom: 8 }}>No packages found</p>
-            <p style={{ color: 'var(--muted)', fontSize: 15, marginBottom: 20 }}>Try adjusting filters or guest count.</p>
+          <div style={{ textAlign: 'center', padding: '60px 24px', background: 'var(--bg)', borderRadius: 20 }}>
+            <div style={{ fontSize: 44, marginBottom: 14 }}>🍽️</div>
+            <p style={{ fontWeight: 700, fontSize: 17, color: 'var(--heading)', margin: '0 0 8px' }}>No packages found</p>
+            <p style={{ color: 'var(--muted)', fontSize: 14, margin: '0 0 20px' }}>Try adjusting your filters.</p>
             <button onClick={() => { setSearch(''); setCategory('ALL'); setEventType('ALL'); setMealTab('All') }}
-              style={{ padding: '10px 28px', borderRadius: 999, background: 'var(--primary)', border: 'none', color: '#fff', fontWeight: 600, fontSize: 15, cursor: 'pointer', fontFamily: 'inherit' }}>
-              Clear Filters
+              style={{ padding: '10px 24px', borderRadius: 999, background: 'var(--primary)', border: 'none', color: '#fff', fontWeight: 600, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}>
+              Reset Filters
             </button>
           </div>
         ) : (
@@ -222,37 +267,40 @@ export default function EventSetupPage() {
                 .find(t => guestCount >= t.minGuests && (t.maxGuests == null || guestCount <= t.maxGuests))
                 || pkg.pricingTiers?.[0]
               const img = pkg.items?.find(pi => pi.menuItem?.image)?.menuItem?.image
-              const accentColor = CAT_COLORS[pkgCat] || '#34C759'
+              const accent = CAT_COLORS[pkgCat] || '#34C759'
               return (
-                <div
-                  key={pkg.id}
-                  onClick={() => setActiveModalPkg(pkg)}
-                  style={{ background: 'var(--bg)', borderRadius: 16, overflow: 'hidden', boxShadow: 'var(--shadow)', cursor: 'pointer', transition: 'transform 0.15s, box-shadow 0.15s' }}
-                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = 'var(--shadow-md)' }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'var(--shadow)' }}
-                >
-                  <div style={{ height: 140, background: img ? 'transparent' : accentColor, position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div key={pkg.id} className="pkg-card" onClick={() => setActiveModalPkg(pkg)}>
+                  {/* Image / placeholder */}
+                  <div style={{ height: 148, background: img ? 'transparent' : `linear-gradient(135deg, ${accent}cc, ${accent})`, position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     {img
                       ? <img src={img} alt={pkg.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      : <span style={{ fontSize: 52, filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.15))' }}>{EMOJIS[idx % EMOJIS.length]}</span>
+                      : <span style={{ fontSize: 48, filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.18))' }}>{EMOJIS[idx % EMOJIS.length]}</span>
                     }
-                    <span style={{ position: 'absolute', bottom: 8, left: 8, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)', color: '#fff', fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 999 }}>
+                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.42) 0%, transparent 55%)' }} />
+
+                    {/* Category badge */}
+                    <span style={{ position: 'absolute', bottom: 10, left: 10, background: 'rgba(0,0,0,0.48)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', color: '#fff', fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 999, letterSpacing: '0.01em' }}>
                       {CAT_LABELS[pkgCat] || 'Package'}
                     </span>
-                    <span style={{ position: 'absolute', top: 10, right: 10, width: 10, height: 10, borderRadius: '50%', background: pkg.type === 'VEG' ? '#34C759' : '#FF3B30', border: '1.5px solid #fff' }} />
+
+                    {/* Veg/NonVeg dot */}
+                    <span style={{ position: 'absolute', top: 10, right: 10, width: 9, height: 9, borderRadius: '50%', background: pkg.type === 'VEG' ? '#34C759' : '#FF3B30', border: '1.5px solid #fff', boxShadow: '0 1px 4px rgba(0,0,0,0.2)' }} />
                   </div>
-                  <div style={{ padding: '12px 14px 14px' }}>
-                    <p style={{ fontWeight: 700, fontSize: 15, color: 'var(--heading)', margin: '0 0 4px', lineHeight: 1.25, letterSpacing: -0.1 }}>{pkg.name}</p>
-                    <p style={{ color: 'var(--muted)', fontSize: 13, margin: '0 0 12px', lineHeight: 1.4 }}>
-                      {(pkg.description || 'Customizable catering package').slice(0, 55)}{(pkg.description || '').length > 55 ? '…' : ''}
+
+                  {/* Info */}
+                  <div style={{ padding: '13px 14px 15px' }}>
+                    <p style={{ fontWeight: 700, fontSize: 15, color: 'var(--heading)', margin: '0 0 3px', lineHeight: 1.25, letterSpacing: '-0.2px' }}>{pkg.name}</p>
+                    <p style={{ color: 'var(--muted)', fontSize: 12.5, margin: '0 0 12px', lineHeight: 1.45 }}>
+                      {(pkg.description || 'Customizable catering package').slice(0, 52)}{(pkg.description || '').length > 52 ? '…' : ''}
                     </p>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontWeight: 700, fontSize: 16, color: accentColor, letterSpacing: -0.2 }}>
-                        {tier ? `₹${tier.pricePerPerson}` : '—'}<span style={{ fontSize: 11, fontWeight: 500, color: 'var(--muted)', marginLeft: 1 }}>/pp</span>
+                      <span style={{ fontWeight: 700, fontSize: 17, color: accent, letterSpacing: '-0.3px' }}>
+                        {tier ? `₹${tier.pricePerPerson}` : '—'}
+                        <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--muted)', marginLeft: 2 }}>/person</span>
                       </span>
                       <span style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                        {pkg.servesMin}+
+                        <IconUsers />
+                        {pkg.servesMin}+ guests
                       </span>
                     </div>
                   </div>
@@ -293,68 +341,69 @@ function PackageModal({ pkg, selectedDay, initialGuests, onClose, onConfirm }) {
 
   const todayStr    = new Date().toISOString().split('T')[0]
   const pkgCat      = (pkg.eventType || '').split(':')[0]
-  const accentColor = CAT_COLORS[pkgCat] || '#34C759'
+  const accent      = CAT_COLORS[pkgCat] || '#34C759'
 
   const activeTier = pkg.pricingTiers?.slice().sort((a, b) => a.minGuests - b.minGuests)
     .find(t => guests >= t.minGuests && (t.maxGuests == null || guests <= t.maxGuests))
     || pkg.pricingTiers?.[0]
 
-  const inputStyle = {
-    width: '100%', padding: '13px 16px', borderRadius: 10,
-    border: 'none', fontSize: 17, color: 'var(--heading)',
+  const fieldStyle = {
+    width: '100%', padding: '13px 15px', borderRadius: 12,
+    border: 'none', fontSize: 15, color: 'var(--heading)',
     background: 'var(--fill-tertiary)', fontFamily: 'inherit',
-    boxSizing: 'border-box', outline: 'none',
+    boxSizing: 'border-box', outline: 'none', fontWeight: 500,
   }
 
-  const guestBtnStyle = (highlight) => ({
-    width: 32, height: 32, borderRadius: '50%', border: 'none',
-    background: highlight ? 'var(--primary)' : 'var(--fill-tertiary)',
-    color: highlight ? '#fff' : 'var(--heading)',
-    fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center',
-    justifyContent: 'center', fontWeight: 700, lineHeight: 1, fontFamily: 'inherit',
+  const counterBtn = (plus) => ({
+    width: 34, height: 34, borderRadius: '50%', border: 'none',
+    background: plus ? accent : 'var(--fill-secondary)',
+    color: plus ? '#fff' : 'var(--heading)',
+    fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center',
+    justifyContent: 'center', fontWeight: 500, lineHeight: 1, fontFamily: 'inherit',
+    flexShrink: 0,
   })
 
   return (
     <div onClick={e => e.target === e.currentTarget && onClose()}
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', zIndex: 1000, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', zIndex: 1000, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
     >
-      <div style={{ background: 'var(--bg)', borderRadius: '24px 24px 0 0', width: '100%', maxWidth: 480, animation: 'slideUp 0.32s ease', maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ background: 'var(--bg)', borderRadius: '24px 24px 0 0', width: '100%', maxWidth: 480, animation: 'slideUp 0.3s cubic-bezier(0.32,0.72,0,1)', maxHeight: '92vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
 
-        {/* Handle bar */}
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0 0' }}>
-          <div style={{ width: 36, height: 5, borderRadius: 999, background: 'var(--fill-secondary)' }} />
+        {/* Drag handle */}
+        <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 10 }}>
+          <div style={{ width: 32, height: 4, borderRadius: 999, background: 'var(--fill-secondary)' }} />
         </div>
 
-        {/* Hero image */}
-        <div style={{ height: 200, position: 'relative', background: accentColor, flexShrink: 0, overflow: 'hidden' }}>
+        {/* Hero */}
+        <div style={{ height: 210, position: 'relative', background: `linear-gradient(135deg, ${accent}cc, ${accent})`, flexShrink: 0, overflow: 'hidden' }}>
           {(() => {
             const img = pkg.items?.find(pi => pi.menuItem?.image)?.menuItem?.image
             return img
               ? <img src={img} alt={pkg.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 72 }}>🍛</div>
+              : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 80 }}>🍛</div>
           })()}
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 50%)' }} />
-          <div style={{ position: 'absolute', bottom: 16, left: 20, right: 54 }}>
-            <h3 style={{ color: '#fff', fontWeight: 700, fontSize: 20, margin: 0, letterSpacing: -0.3, lineHeight: 1.2 }}>{pkg.name}</h3>
-            <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: 14, margin: '5px 0 0' }}>{(pkg.description || '').slice(0, 65)}{pkg.description?.length > 65 ? '…' : ''}</p>
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.65) 0%, transparent 55%)' }} />
+          <div style={{ position: 'absolute', bottom: 18, left: 20, right: 54 }}>
+            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 5px' }}>{CAT_LABELS[pkgCat] || 'Package'}</p>
+            <h3 style={{ color: '#fff', fontWeight: 700, fontSize: 22, margin: 0, letterSpacing: '-0.4px', lineHeight: 1.2 }}>{pkg.name}</h3>
           </div>
           <button onClick={onClose}
-            style={{ position: 'absolute', top: 14, right: 14, width: 32, height: 32, borderRadius: '50%', background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(8px)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 14, fontWeight: 700 }}>×</button>
+            style={{ position: 'absolute', top: 14, right: 14, width: 30, height: 30, borderRadius: '50%', background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(8px)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 16, fontWeight: 400 }}>×</button>
         </div>
 
-        <div style={{ padding: '20px 20px 0', overflowY: 'auto', flex: 1 }}>
+        <div style={{ overflowY: 'auto', flex: 1, padding: '20px 20px 8px' }}>
 
           {/* Pricing tiers */}
           {pkg.pricingTiers?.length > 0 && (
             <div style={{ marginBottom: 20 }}>
-              <p style={{ fontSize: 13, fontWeight: 400, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>Pricing Tiers</p>
+              <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 10px' }}>Pricing</p>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {pkg.pricingTiers.sort((a, b) => a.minGuests - b.minGuests).map(t => {
                   const isMatch = guests >= t.minGuests && (t.maxGuests == null || guests <= t.maxGuests)
                   return (
-                    <div key={t.id} style={{ padding: '9px 14px', borderRadius: 12, background: isMatch ? 'var(--primary-bg)' : 'var(--fill-tertiary)', border: `1.5px solid ${isMatch ? 'var(--primary)' : 'transparent'}`, textAlign: 'center', minWidth: 80 }}>
-                      <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 3 }}>{t.minGuests}{t.maxGuests ? `–${t.maxGuests}` : '+'} guests</div>
-                      <div style={{ fontWeight: 700, color: isMatch ? 'var(--primary)' : 'var(--heading)', fontSize: 17, letterSpacing: -0.3 }}>₹{t.pricePerPerson}<span style={{ fontSize: 11, fontWeight: 500, color: 'var(--muted)' }}>/pp</span></div>
+                    <div key={t.id} style={{ padding: '8px 14px', borderRadius: 12, background: isMatch ? `${accent}18` : 'var(--fill-tertiary)', border: `1.5px solid ${isMatch ? accent : 'transparent'}`, textAlign: 'center', minWidth: 88 }}>
+                      <div style={{ fontSize: 10, color: 'var(--muted)', fontWeight: 500, marginBottom: 3, letterSpacing: '0.02em' }}>{t.minGuests}{t.maxGuests ? `–${t.maxGuests}` : '+'} guests</div>
+                      <div style={{ fontWeight: 700, color: isMatch ? accent : 'var(--heading)', fontSize: 16, letterSpacing: '-0.3px' }}>₹{t.pricePerPerson}<span style={{ fontSize: 10, fontWeight: 500, color: 'var(--muted)' }}>/pp</span></div>
                     </div>
                   )
                 })}
@@ -364,11 +413,11 @@ function PackageModal({ pkg, selectedDay, initialGuests, onClose, onConfirm }) {
 
           {/* Included categories */}
           {pkg.categoryRules?.length > 0 && (
-            <div style={{ marginBottom: 16 }}>
-              <p style={{ fontSize: 13, fontWeight: 400, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>What's Included</p>
+            <div style={{ marginBottom: 18 }}>
+              <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 10px' }}>What's Included</p>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {pkg.categoryRules.map(r => (
-                  <span key={r.id} style={{ padding: '5px 12px', borderRadius: 999, background: 'var(--primary-bg)', color: 'var(--primary)', fontSize: 13, fontWeight: 600 }}>
+                  <span key={r.id} style={{ padding: '4px 11px', borderRadius: 999, background: `${accent}15`, color: accent, fontSize: 13, fontWeight: 600, letterSpacing: '-0.1px' }}>
                     {r.label}
                   </span>
                 ))}
@@ -376,16 +425,16 @@ function PackageModal({ pkg, selectedDay, initialGuests, onClose, onConfirm }) {
             </div>
           )}
 
-          {/* Package items / dishes */}
+          {/* Menu items */}
           {pkg.items?.length > 0 && (
             <div style={{ marginBottom: 20 }}>
-              <p style={{ fontSize: 13, fontWeight: 400, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
-                Menu Items ({pkg.items.length})
+              <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 10px' }}>
+                Menu Items · {pkg.items.length}
               </p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 16px' }}>
                 {pkg.items.map((pi, i) => (
-                  <div key={pi.id || i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: 'var(--heading)', padding: '5px 0' }}>
-                    <span style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: pkg.type === 'VEG' ? '#34C759' : '#FF3B30', border: '1px solid rgba(0,0,0,0.1)' }} />
+                  <div key={pi.id || i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13.5, color: 'var(--heading)', padding: '5px 0', borderBottom: '0.5px solid var(--separator-nm)' }}>
+                    <span style={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0, background: pkg.type === 'VEG' ? '#34C759' : '#FF3B30', border: '1px solid rgba(0,0,0,0.08)' }} />
                     {pi.menuItem?.name || pi.name || 'Item'}
                   </div>
                 ))}
@@ -394,15 +443,18 @@ function PackageModal({ pkg, selectedDay, initialGuests, onClose, onConfirm }) {
           )}
 
           {/* Date + Time */}
-          <div style={{ background: 'var(--bg-page)', borderRadius: 12, overflow: 'hidden', marginBottom: 16 }}>
+          <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 10px' }}>Event Details</p>
+          <div style={{ background: 'var(--fill-tertiary)', borderRadius: 14, overflow: 'hidden', marginBottom: 16 }}>
             <div style={{ padding: '12px 14px', borderBottom: '0.5px solid var(--separator-nm)' }}>
-              <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Event Date</p>
-              <input type="date" value={eventDate} min={todayStr} onChange={e => setEventDate(e.target.value)} onClick={e => { try { e.target.showPicker() } catch(_) {} }} style={{ ...inputStyle, cursor: 'pointer' }} />
+              <p style={{ fontSize: 11, fontWeight: 500, color: 'var(--muted)', margin: '0 0 7px' }}>Date</p>
+              <input type="date" value={eventDate} min={todayStr} onChange={e => setEventDate(e.target.value)} onClick={e => { try { e.target.showPicker() } catch(_) {} }}
+                style={{ ...fieldStyle, background: 'transparent', padding: '0', fontSize: 15, cursor: 'pointer', fontWeight: 600 }} />
             </div>
             <div style={{ padding: '12px 14px' }}>
-              <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Time Slot</p>
-              <select value={timeSlot} onChange={e => setTimeSlot(e.target.value)} style={inputStyle}>
-                <option value="">Select time slot…</option>
+              <p style={{ fontSize: 11, fontWeight: 500, color: 'var(--muted)', margin: '0 0 7px' }}>Time Slot</p>
+              <select value={timeSlot} onChange={e => setTimeSlot(e.target.value)}
+                style={{ ...fieldStyle, background: 'transparent', padding: '0', fontSize: 15, fontWeight: 600 }}>
+                <option value="">Select a time slot…</option>
                 {TIME_SLOT_GROUPS
                   .filter(g => !pkg.mealTypes?.length || pkg.mealTypes.includes(g.label))
                   .map(g => (
@@ -415,46 +467,43 @@ function PackageModal({ pkg, selectedDay, initialGuests, onClose, onConfirm }) {
           </div>
 
           {/* Guest counter */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '13px 16px', background: 'var(--fill-tertiary)', borderRadius: 12, marginBottom: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', background: 'var(--fill-tertiary)', borderRadius: 14, marginBottom: 20 }}>
             <div>
-              <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 2px' }}>Guests</p>
+              <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--heading)', margin: '0 0 2px', letterSpacing: '-0.1px' }}>Guests</p>
               {activeTier && (
-                <p style={{ fontSize: 13, color: 'var(--primary)', fontWeight: 600, margin: 0 }}>
-                  ₹{activeTier.pricePerPerson}/pp · ₹{(activeTier.pricePerPerson * guests).toLocaleString('en-IN')} total
+                <p style={{ fontSize: 12, color: accent, fontWeight: 600, margin: 0 }}>
+                  ₹{activeTier.pricePerPerson}/pp · ₹{(activeTier.pricePerPerson * guests).toLocaleString('en-IN')} est.
                 </p>
               )}
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <button onClick={() => setGuests(v => Math.max(1, v > 25 ? v - 5 : v - 1))} style={guestBtnStyle(false)}>−</button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <button onClick={() => setGuests(v => Math.max(1, v > 25 ? v - 5 : v - 1))} style={counterBtn(false)}>−</button>
               {editingGuests ? (
                 <input
-                  autoFocus
-                  type="number"
-                  value={guestInput}
+                  autoFocus type="number" value={guestInput}
                   onChange={e => setGuestInput(e.target.value)}
                   onBlur={() => { const n = parseInt(guestInput); if (!isNaN(n) && n > 0) setGuests(n); setEditingGuests(false) }}
                   onKeyDown={e => { if (e.key === 'Enter') e.target.blur() }}
-                  style={{ fontWeight: 700, fontSize: 18, color: 'var(--heading)', width: 56, textAlign: 'center', border: '1.5px solid var(--primary)', borderRadius: 8, padding: '2px 4px', outline: 'none', fontFamily: 'inherit' }}
+                  style={{ fontWeight: 700, fontSize: 19, color: 'var(--heading)', width: 58, textAlign: 'center', border: `1.5px solid ${accent}`, borderRadius: 10, padding: '2px 4px', outline: 'none', fontFamily: 'inherit' }}
                 />
               ) : (
-                <span
-                  onClick={() => { setGuestInput(String(guests)); setEditingGuests(true) }}
-                  title="Click to edit"
-                  style={{ fontWeight: 700, fontSize: 20, color: 'var(--heading)', minWidth: 36, textAlign: 'center', cursor: 'text', borderBottom: '1.5px dashed var(--primary)' }}
-                >{guests}</span>
+                <span onClick={() => { setGuestInput(String(guests)); setEditingGuests(true) }} title="Tap to edit"
+                  style={{ fontWeight: 700, fontSize: 22, color: 'var(--heading)', minWidth: 38, textAlign: 'center', cursor: 'text', borderBottom: `1.5px dashed ${accent}` }}>
+                  {guests}
+                </span>
               )}
-              <button onClick={() => setGuests(v => v >= 25 ? v + 5 : v + 1)} style={guestBtnStyle(true)}>+</button>
+              <button onClick={() => setGuests(v => v >= 25 ? v + 5 : v + 1)} style={counterBtn(true)}>+</button>
             </div>
           </div>
 
           {/* CTA */}
           <button
             onClick={() => {
-              if (!eventDate) { toast.error('Please select an event date'); return }
-              if (!timeSlot) { toast.error('Please select a time slot'); return }
+              if (!eventDate) { toast.error('Please select a date'); return }
+              if (!timeSlot)  { toast.error('Please select a time slot'); return }
               onConfirm(eventDate, timeSlot, guests)
             }}
-            style={{ width: '100%', padding: '17px', borderRadius: 999, background: 'var(--primary)', border: 'none', color: '#fff', fontWeight: 700, fontSize: 17, cursor: 'pointer', fontFamily: 'inherit', boxShadow: 'var(--shadow-green)', marginBottom: 28, letterSpacing: -0.2 }}
+            style={{ width: '100%', padding: '16px', borderRadius: 999, background: accent, border: 'none', color: '#fff', fontWeight: 700, fontSize: 16, cursor: 'pointer', fontFamily: 'inherit', letterSpacing: '-0.2px', marginBottom: 28, boxShadow: `0 4px 20px ${accent}55` }}
           >
             Build Your Menu →
           </button>
