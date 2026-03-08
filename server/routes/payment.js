@@ -5,10 +5,12 @@ const { PrismaClient } = require('@prisma/client')
 
 const prisma = new PrismaClient()
 
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
-})
+function getRazorpay() {
+  if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+    throw new Error('Razorpay keys not configured on this server')
+  }
+  return new Razorpay({ key_id: process.env.RAZORPAY_KEY_ID, key_secret: process.env.RAZORPAY_KEY_SECRET })
+}
 
 // POST /api/payment/create-order
 router.post('/create-order', async (req, res) => {
@@ -16,7 +18,7 @@ router.post('/create-order', async (req, res) => {
     const { amount, currency = 'INR', notes = {} } = req.body
     if (!amount || amount < 100) return res.status(400).json({ error: 'Invalid amount' })
 
-    const order = await razorpay.orders.create({
+    const order = await getRazorpay().orders.create({
       amount: Math.round(amount), // in paise
       currency,
       notes,
