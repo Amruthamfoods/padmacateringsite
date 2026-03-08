@@ -11,7 +11,10 @@ model User {
   id            Int            @id @default(autoincrement())
   name          String
   email         String         @unique
-  phone         String?
+  phone         String?  @unique
+  address       String?
+  addressLat    Float?
+  addressLng    Float?
   passwordHash  String
   role          Role           @default(CUSTOMER)
   createdAt     DateTime       @default(now())
@@ -66,11 +69,13 @@ enum DietType {
 model MenuPackage {
   id            Int                   @id @default(autoincrement())
   name          String
-  eventType     String?
+  eventType     String?   // event categories (Birthday, Wedding, etc.) comma-separated
+  serviceType   String?   // service type (Meal Box, Delivery, Catering) comma-separated
   style         CuisineStyle          @default(ANDHRA)
   type          DietType              @default(VEG)
   servesMin     Int                   @default(50)
   description   String?
+  image         String?
   basePrice     Float                 @default(0)
   mealTypes     String[]              @default(["Lunch", "Dinner"])
   items         MenuPackageItem[]
@@ -97,6 +102,8 @@ model PackageCategoryRule {
   minChoices     Int                       @default(1)
   maxChoices     Int
   extraItemPrice Float                     @default(0)
+  qtyPerPerson   Float?                    // serving qty per person for whole category
+  qtyUnit        String?                   // gm | kg | pcs
   allowedItems   PackageCategoryRuleItem[]
 }
 
@@ -104,17 +111,20 @@ model PackageCategoryRuleItem {
   id         Int                 @id @default(autoincrement())
   ruleId     Int
   rule       PackageCategoryRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
-  menuItemId Int
-  menuItem   MenuItem            @relation(fields: [menuItemId], references: [id])
+  menuItemId    Int
+  menuItem      MenuItem            @relation(fields: [menuItemId], references: [id])
+  premiumPrice  Float?  // extra charge above base; null = standard included item
 
   @@unique([ruleId, menuItemId])
 }
 
 model MenuPackageItem {
-  packageId  Int
-  menuItemId Int
-  package    MenuPackage @relation(fields: [packageId], references: [id])
-  menuItem   MenuItem    @relation(fields: [menuItemId], references: [id])
+  packageId         Int
+  menuItemId        Int
+  quantityPerPerson Float?
+  pricePerUnit      Float?
+  package           MenuPackage @relation(fields: [packageId], references: [id])
+  menuItem          MenuItem    @relation(fields: [menuItemId], references: [id])
 
   @@id([packageId, menuItemId])
 }
@@ -262,4 +272,56 @@ model BlockedDate {
   date         DateTime @unique
   reason       String?
   blockedSlots String[] @default([]) // Empty means whole day blocked
+}
+
+model OtpCode {
+  id        Int      @id @default(autoincrement())
+  phone     String
+  code      String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([phone])
+}
+
+model RewardSettings {
+  id             Int     @id @default(1)
+  enabled        Boolean @default(true)
+  pointsPer100   Float   @default(4)     // points earned per ₹100 spent
+  pointValue     Float   @default(0.25)  // ₹ value per point
+  expiryDays     Int?                    // null = never expire
+  minRedeem      Int     @default(100)   // min points to redeem
+  silverMin      Int     @default(500)
+  silverDiscount Float   @default(5)
+  goldMin        Int     @default(2000)
+  goldDiscount   Float   @default(10)
+}
+
+model DeliverySettings {
+  id            Int     @id @default(1)
+  baseAddress   String  @default("Visakhapatnam, Andhra Pradesh")
+  baseLat       Float   @default(17.6868)
+  baseLng       Float   @default(83.2185)
+  freeUpToKm    Float   @default(0)      // 0 = no free zone (bulk 100+ packs handled separately)
+  tier1MaxKm    Float   @default(5)
+  tier1Charge   Float   @default(300)
+  tier2MaxKm    Float   @default(10)
+  tier2Charge   Float   @default(600)
+  tier3MaxKm    Float   @default(15)
+  tier3Charge   Float   @default(800)
+  tier4MaxKm    Float   @default(20)
+  tier4Charge   Float   @default(1200)
+  tier5Charge   Float   @default(1500)   // 20-30km
+  maxDeliveryKm Float   @default(30)     // beyond this: not serviceable
+}
+
+model PricingSettings {
+  id                     Int   @id @default(1)
+  packingCostPercent     Float @default(5)     // % of base price for Mealbox/PackedFood packing
+  mealboxDelivery        Float @default(500)   // flat delivery for Mealbox
+  packedFoodDelivery     Float @default(500)   // flat delivery for Packed Food
+  cateringDelivery       Float @default(1500)  // flat delivery for Catering (full service)
+  serviceChargeFlat      Float @default(1500)  // flat service charge for Catering
+  serviceChargeFreeAbove Int   @default(100)   // free service above this many guests
 }

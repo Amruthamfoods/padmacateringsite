@@ -78,7 +78,7 @@ router.get('/me', authMiddleware, async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
-      select: { id: true, name: true, email: true, phone: true, role: true, createdAt: true },
+      select: { id: true, name: true, email: true, phone: true, address: true, addressLat: true, addressLng: true, role: true, createdAt: true },
     })
     if (!user) {
       logger.warn('User not found', { userId: req.user.id })
@@ -88,6 +88,112 @@ router.get('/me', authMiddleware, async (req, res) => {
   } catch (err) {
     logger.error('Failed to fetch user', { userId: req.user.id, error: err.message })
     res.status(500).json({ error: 'Failed to fetch user' })
+  }
+})
+
+
+// POST /api/auth/send-otp
+router.post('/send-otp', async (req, res) => {
+  try {
+    const rawPhone = (req.body.phone || '').replace(/\D/g, '').slice(-10)
+    if (rawPhone.length !== 10) return res.status(400).json({ error: 'Enter a valid 10-digit phone number' })
+    const mobile = '91' + rawPhone
+
+    // Delete old OTPs for this phone
+    await prisma.otpCode.deleteMany({ where: { phone: mobile } })
+
+    // Generate 6-digit OTP
+    const code = String(Math.floor(100000 + Math.random() * 900000))
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000)
+    await prisma.otpCode.create({ data: { phone: mobile, code, expiresAt } })
+
+    // Check if user already exists (frontend uses this to know if name is needed)
+    const user = await prisma.user.findFirst({ where: { phone: mobile } })
+
+    // Send OTP via MSG91
+    const https = require('https')
+    const msg91Key = process.env.MSG91_AUTH_KEY
+    const message = `Your OTP for Padma Catering is ${code}. Valid for 10 minutes. Do not share.`
+    const smsUrl = `https://api.msg91.com/api/sendhttp.php?authkey=${msg91Key}&mobiles=${mobile}&message=${encodeURIComponent(message)}&route=4&country=91&sender=PADMAC`
+    https.get(smsUrl, (smsRes) => {
+      let data = ''
+      smsRes.on('data', chunk => { data += chunk })
+      smsRes.on('end', () => logger.info('MSG91 response', { data }))
+    }).on('error', err => logger.warn('MSG91 send failed (DLT pending?)', { error: err.message }))
+
+    logger.info('OTP generated for testing', { mobile, code })
+    const isDev = process.env.NODE_ENV !== 'production'
+    res.json({ isNew: !user, ...(isDev && { devOtp: code }) })
+  } catch (err) {
+    logger.error('send-otp error', { error: err.message })
+    res.status(500).json({ error: 'Failed to send OTP' })
+  }
+})
+
+// POST /api/auth/verify-otp
+router.post('/verify-otp', async (req, res) => {
+  try {
+    const rawPhone = (req.body.phone || '').replace(/\D/g, '').slice(-10)
+    if (rawPhone.length !== 10) return res.status(400).json({ error: 'Invalid phone number' })
+    const mobile = '91' + rawPhone
+    const { otp, name } = req.body
+    if (!otp) return res.status(400).json({ error: 'Enter the OTP' })
+
+    // Find valid unused OTP
+    const record = await prisma.otpCode.findFirst({
+      where: { phone: mobile, used: false, expiresAt: { gte: new Date() } },
+      orderBy: { createdAt: 'desc' },
+    })
+    if (!record || record.code !== String(otp)) {
+      return res.status(401).json({ error: 'Invalid or expired OTP' })
+    }
+
+    // Mark OTP used
+    await prisma.otpCode.update({ where: { id: record.id }, data: { used: true } })
+
+    // Find or create user by phone
+    let user = await prisma.user.findFirst({ where: { phone: mobile } })
+    if (!user) {
+      const userName = (name || '').trim() || 'Customer'
+      user = await prisma.user.create({
+        data: {
+          name: userName,
+          email: `ph_${mobile}@padma.local`,
+          phone: mobile,
+          passwordHash: await bcrypt.hash(Math.random().toString(36) + Date.now(), 10),
+        },
+      })
+    }
+
+    const token = signToken(user)
+    logger.info('OTP login success', { userId: user.id, mobile })
+    res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role } })
+  } catch (err) {
+    logger.error('verify-otp error', { error: err.message })
+    res.status(500).json({ error: 'OTP verification failed' })
+  }
+})
+
+
+// PUT /api/auth/profile - Update name and phone
+router.put('/profile', authMiddleware, async (req, res) => {
+  try {
+    const { name, phone, address, addressLat, addressLng } = req.body
+    const data = {}
+    if (name && name.trim()) data.name = name.trim()
+    if (phone !== undefined) {
+      const digits = (phone || '').replace(/\D/g, '').slice(-10)
+      data.phone = digits.length === 10 ? '91' + digits : null
+    }
+    if (address !== undefined) data.address = address || null
+    if (addressLat !== undefined) data.addressLat = addressLat ? parseFloat(addressLat) : null
+    if (addressLng !== undefined) data.addressLng = addressLng ? parseFloat(addressLng) : null
+    const user = await prisma.user.update({ where: { id: req.user.id }, data })
+    logger.info('Profile updated', { userId: user.id })
+    res.json({ user: { id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role } })
+  } catch (err) {
+    logger.error('Profile update error', { error: err.message })
+    res.status(500).json({ error: 'Failed to update profile' })
   }
 })
 

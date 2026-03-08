@@ -30,6 +30,7 @@ export default function BookingDetailsPage() {
   const [eventDate, setEventDate] = useState('')
   const [guestCount, setGuestCount] = useState(100)
   const [venue, setVenue] = useState('')
+  const [venueConfirmed, setVenueConfirmed] = useState(false)
   const [servingStyle, setServingStyle] = useState('BUFFET')
   const [blockedDates, setBlockedDates] = useState([])
   const [errors, setErrors] = useState({})
@@ -130,18 +131,44 @@ export default function BookingDetailsPage() {
 
         {/* Venue */}
         <div className="booking-card">
-          <h2 className="booking-card-title">
-            <i className="fa-solid fa-location-dot" style={{ marginRight: 10 }} />Venue Address
-          </h2>
-          <div className="field-block" style={{ marginBottom: 0 }}>
-            <input
-              type="text" value={venue}
-              onChange={e => { setVenue(e.target.value); setErrors(er => ({ ...er, venue: undefined })) }}
-              placeholder="Enter full venue address…"
-              className={`booking-input${errors.venue ? ' error' : ''}`}
-            />
-            {errors.venue && <p className="field-error">{errors.venue}</p>}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+            <h2 className="booking-card-title" style={{ marginBottom: 0 }}>
+              <i className="fa-solid fa-location-dot" style={{ marginRight: 10 }} />Venue Address
+            </h2>
+            {venueConfirmed && venue && (
+              <button
+                onClick={() => setVenueConfirmed(false)}
+                style={{ fontSize: '0.78rem', color: 'var(--primary)', background: 'none', border: '1px solid var(--primary-light)', borderRadius: 6, padding: '4px 12px', cursor: 'pointer', fontWeight: 600 }}
+              >
+                <i className="fa-solid fa-pen" style={{ marginRight: 5 }} />Edit
+              </button>
+            )}
           </div>
+          {venueConfirmed && venue ? (
+            <div style={{ background: 'var(--bg-page)', border: '1.5px solid var(--border)', borderRadius: 10, padding: '12px 16px', color: 'var(--heading)', fontSize: '0.9rem', lineHeight: 1.5 }}>
+              <i className="fa-solid fa-map-pin" style={{ color: 'var(--primary)', marginRight: 8 }} />
+              {venue}
+            </div>
+          ) : (
+            <div className="field-block" style={{ marginBottom: 0 }}>
+              <input
+                type="text" value={venue}
+                onChange={e => { setVenue(e.target.value); setErrors(er => ({ ...er, venue: undefined })) }}
+                onBlur={() => { if (venue.trim()) setVenueConfirmed(true) }}
+                placeholder="Enter full venue address…"
+                className={`booking-input${errors.venue ? ' error' : ''}`}
+              />
+              {venue.trim() && (
+                <button
+                  onClick={() => setVenueConfirmed(true)}
+                  style={{ marginTop: 8, fontSize: '0.82rem', color: 'var(--primary)', background: 'none', border: '1px solid var(--primary-light)', borderRadius: 6, padding: '5px 14px', cursor: 'pointer', fontWeight: 600 }}
+                >
+                  <i className="fa-solid fa-check" style={{ marginRight: 5 }} />Confirm Address
+                </button>
+              )}
+              {errors.venue && <p className="field-error">{errors.venue}</p>}
+            </div>
+          )}
         </div>
 
         {/* Serving Style */}

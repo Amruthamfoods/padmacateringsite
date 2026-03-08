@@ -1,31 +1,36 @@
-const IMAGES = [
-  { src: 'https://images.unsplash.com/photo-1555244162-803834f87a4d?w=700&h=400&fit=crop&q=80', label: 'Wedding Buffet', span: 'wide' },
-  { src: 'https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=400&h=400&fit=crop&q=80', label: 'Corporate Event' },
-  { src: 'https://images.unsplash.com/photo-1579691769318-e08b41a2f52c?w=400&h=400&fit=crop&q=80', label: 'Live Counter' },
-  { src: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=700&h=400&fit=crop&q=80', label: 'South Indian Thali', span: 'wide' },
-  { src: 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=400&h=400&fit=crop&q=80', label: 'Dessert Station' },
+const images = [
+  { src: 'https://images.unsplash.com/photo-1555244162-803834f70033?w=900&auto=format&q=80', alt: 'Grand catering buffet' },
+  { src: 'https://images.unsplash.com/photo-1567521464027-f127ff144326?w=600&auto=format&q=80', alt: 'Indian food spread' },
+  { src: 'https://images.unsplash.com/photo-1596797038530-2c107229654b?w=600&auto=format&q=80', alt: 'Biryani' },
+  { src: 'https://images.unsplash.com/photo-1551024601-bec78aea704b?w=600&auto=format&q=80', alt: 'Sweets and desserts' },
+  { src: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=600&auto=format&q=80', alt: 'North Indian cuisine' },
+  { src: 'https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=900&auto=format&q=80', alt: 'Wedding reception' },
+  { src: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600&auto=format&q=80', alt: 'Fine dining setup' },
+  { src: 'https://images.unsplash.com/photo-1567188040759-fb8a883dc6d8?w=600&auto=format&q=80', alt: 'Indian starters' },
+  { src: 'https://images.unsplash.com/photo-1630383249896-424e482df921?w=600&auto=format&q=80', alt: 'South Indian breakfast' },
 ]
+
 export default function Gallery() {
   return (
-    <section style={{ background: 'var(--bg)', padding: '96px 0' }}>
+    <section id="gallery" className="section">
       <div className="container">
-        <div style={{ textAlign: 'center', marginBottom: 48 }}>
-          <div style={{ display: 'inline-block', background: 'var(--primary-bg)', border: '1px solid var(--primary-light)', borderRadius: 'var(--r-pill)', padding: '5px 16px', fontSize: '0.8rem', fontWeight: 600, color: 'var(--primary-dark)', marginBottom: 14 }}>Gallery</div>
-          <h2 style={{ fontWeight: 800, fontSize: 'clamp(1.8rem, 4vw, 2.6rem)', color: 'var(--heading)', marginBottom: 12 }}>Events We Have Served</h2>
-          <p style={{ color: 'var(--muted)', fontSize: '1.05rem', maxWidth: 440, margin: '0 auto' }}>A glimpse of the memories we helped create across Visakhapatnam</p>
+        <div className="centered reveal">
+          <span className="section-label">Our Gallery</span>
+          <h2 className="section-title">Feasts We Have <em>Created</em></h2>
+          <div className="section-divider" style={{ maxWidth: 300, margin: '0 auto 52px' }}>
+            <div className="dot" />
+          </div>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-          {IMAGES.map((img, i) => (
-            <div key={i} style={{ borderRadius: 'var(--r-lg)', overflow: 'hidden', position: 'relative', gridColumn: img.span === 'wide' ? 'span 2' : 'span 1', aspectRatio: img.span === 'wide' ? '2.1/1' : '1/1' }}>
-              <img src={img.src} alt={img.label} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s', display: 'block' }}
-                onMouseEnter={e => e.target.style.transform = 'scale(1.05)'}
-                onMouseLeave={e => e.target.style.transform = 'scale(1)'} />
-              <div style={{ position: 'absolute', bottom: 12, left: 12, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)', borderRadius: 'var(--r-sm)', padding: '4px 12px', fontSize: '0.78rem', fontWeight: 600, color: 'white' }}>{img.label}</div>
+
+        <div className="gallery-grid">
+          {images.map((img, i) => (
+            <div className={`g-item reveal d${Math.min(i % 4 + 1, 4)}`} key={img.src}>
+              <img src={img.src} alt={img.alt} loading="lazy" />
+              <div className="g-overlay">
+                <i className="fa-solid fa-magnifying-glass-plus" />
+              </div>
             </div>
           ))}
-        </div>
-        <div style={{ textAlign: 'center', marginTop: 36 }}>
-          <a href="/gallery" className="site-btn site-btn-outline">View Full Gallery <i className="fa-solid fa-arrow-right" /></a>
         </div>
       </div>
     </section>

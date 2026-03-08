@@ -234,6 +234,7 @@ router.get('/menu/categories', async (req, res) => {
   try {
     const categories = await prisma.menuCategory.findMany({
       orderBy: { sortOrder: 'asc' },
+      include: { _count: { select: { items: true } } },
     })
     res.json(categories)
   } catch (err) {
@@ -332,12 +333,14 @@ router.get('/menu/items', async (req, res) => {
 
 router.post('/menu/items', async (req, res) => {
   try {
-    const { name, description, image, categoryId, style, type, active, price } = req.body
+    const { name, description, image, categoryId, style, type, active, price, servingSize, servingUnit } = req.body
     const item = await prisma.menuItem.create({
       data: {
         name, description: description || null, image: image || null,
         categoryId: parseInt(categoryId), style: style || 'ANDHRA',
         type: type || 'VEG', active: active !== false, price: parseFloat(price || 0),
+        servingSize: servingSize ? parseFloat(servingSize) : null,
+        servingUnit: servingUnit || null,
       },
       include: { category: true },
     })
@@ -349,7 +352,7 @@ router.post('/menu/items', async (req, res) => {
 
 router.put('/menu/items/:id', async (req, res) => {
   try {
-    const { name, description, image, categoryId, style, type, active, price } = req.body
+    const { name, description, image, categoryId, style, type, active, price, servingSize, servingUnit } = req.body
     const data = {}
     if (name) data.name = name
     if (description !== undefined) data.description = description
@@ -359,6 +362,8 @@ router.put('/menu/items/:id', async (req, res) => {
     if (type) data.type = type
     if (active !== undefined) data.active = active
     if (price !== undefined) data.price = parseFloat(price)
+    if (servingSize !== undefined) data.servingSize = servingSize ? parseFloat(servingSize) : null
+    if (servingUnit !== undefined) data.servingUnit = servingUnit || null
     const item = await prisma.menuItem.update({ where: { id: parseInt(req.params.id) }, data, include: { category: true } })
     res.json(item)
   } catch (err) {
@@ -400,10 +405,10 @@ router.get('/menu/packages', async (req, res) => {
 
 router.post('/menu/packages', async (req, res) => {
   try {
-    const { name, eventType, style, type, servesMin, description, basePrice, mealTypes, itemIds } = req.body
+    const { name, eventType, serviceType, style, type, servesMin, description, basePrice, mealTypes, itemIds } = req.body
     const pkg = await prisma.menuPackage.create({
       data: {
-        name, eventType: eventType || null, style: style || 'ANDHRA', type: type || 'VEG',
+        name, eventType: eventType || null, serviceType: serviceType || null, style: style || 'ANDHRA', type: type || 'VEG',
         servesMin: parseInt(servesMin || 50), description: description || null,
         basePrice: parseFloat(basePrice || 0),
         mealTypes: Array.isArray(mealTypes) ? mealTypes : ["Breakfast", "Lunch", "Snacks", "Dinner"],
@@ -419,10 +424,11 @@ router.post('/menu/packages', async (req, res) => {
 
 router.put('/menu/packages/:id', async (req, res) => {
   try {
-    const { name, eventType, style, type, servesMin, description, basePrice, mealTypes } = req.body
+    const { name, eventType, serviceType, style, type, servesMin, description, basePrice, mealTypes } = req.body
     const data = {}
     if (name) data.name = name
     if (eventType !== undefined) data.eventType = eventType
+    if (serviceType !== undefined) data.serviceType = serviceType
     if (style) data.style = style
     if (type) data.type = type
     if (servesMin) data.servesMin = parseInt(servesMin)
@@ -449,7 +455,55 @@ router.delete('/menu/packages/:id', async (req, res) => {
   }
 })
 
-// Package Pricing Tiers
+
+// Package Items management (replace all items with quantity/price)
+router.put('/packages/:id/items', async (req, res) => {
+  try {
+    const pkgId = parseInt(req.params.id)
+    const { items } = req.body  // [{ menuItemId, quantityPerPerson, pricePerUnit }]
+    await prisma.menuPackageItem.deleteMany({ where: { packageId: pkgId } })
+    if (items && items.length) {
+      await prisma.menuPackageItem.createMany({
+        data: items.map(i => ({
+          packageId:         pkgId,
+          menuItemId:        parseInt(i.menuItemId),
+          quantityPerPerson: i.quantityPerPerson ? parseFloat(i.quantityPerPerson) : null,
+          pricePerUnit:      i.pricePerUnit      ? parseFloat(i.pricePerUnit)      : null,
+        })),
+      })
+    }
+    const pkg = await prisma.menuPackage.findUnique({
+      where: { id: pkgId },
+      include: { items: { include: { menuItem: { include: { category: true } } } } },
+    })
+    res.json(pkg)
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Failed to update package items' })
+  }
+})
+
+// Package Pricing Tiers — bulk replace
+router.put('/packages/:id/tiers/bulk', async (req, res) => {
+  try {
+    const pkgId = parseInt(req.params.id)
+    const { tiers } = req.body // [{ minGuests, maxGuests, pricePerPerson }]
+    await prisma.packagePricingTier.deleteMany({ where: { packageId: pkgId } })
+    const created = await prisma.packagePricingTier.createMany({
+      data: (tiers || []).map(t => ({
+        packageId: pkgId,
+        minGuests: parseInt(t.minGuests) || 0,
+        maxGuests: t.maxGuests ? parseInt(t.maxGuests) : null,
+        pricePerPerson: parseFloat(t.pricePerPerson) || 0,
+      }))
+    })
+    res.json({ success: true, count: created.count })
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to save tiers' })
+  }
+})
+
+// Package Pricing Tiers — individual CRUD
 router.post('/packages/:id/tiers', async (req, res) => {
   try {
     const { minGuests, maxGuests, pricePerPerson } = req.body
@@ -493,7 +547,11 @@ router.delete('/packages/:id/tiers/:tierId', async (req, res) => {
 // Package Category Rules
 router.post('/packages/:id/rules', async (req, res) => {
   try {
-    const { categoryId, label, minChoices, maxChoices, extraItemPrice, itemIds } = req.body
+    const { categoryId, label, minChoices, maxChoices, extraItemPrice, itemIds, items } = req.body
+    // Support both itemIds (legacy) and items [{menuItemId, premiumPrice}]
+    const itemsData = items?.length
+      ? items.map(it => ({ menuItemId: parseInt(it.menuItemId), premiumPrice: it.premiumPrice != null ? parseFloat(it.premiumPrice) : null }))
+      : itemIds?.length ? itemIds.map(id => ({ menuItemId: parseInt(id), premiumPrice: null })) : null
     const rule = await prisma.packageCategoryRule.create({
       data: {
         packageId: parseInt(req.params.id),
@@ -502,9 +560,7 @@ router.post('/packages/:id/rules', async (req, res) => {
         minChoices: parseInt(minChoices || 1),
         maxChoices: parseInt(maxChoices),
         extraItemPrice: parseFloat(extraItemPrice || 0),
-        allowedItems: itemIds?.length
-          ? { create: itemIds.map(id => ({ menuItemId: parseInt(id) })) }
-          : undefined,
+        allowedItems: itemsData ? { create: itemsData } : undefined,
       },
       include: {
         category: true,
@@ -519,7 +575,7 @@ router.post('/packages/:id/rules', async (req, res) => {
 
 router.put('/packages/:id/rules/:ruleId', async (req, res) => {
   try {
-    const { categoryId, label, minChoices, maxChoices, extraItemPrice, itemIds } = req.body
+    const { categoryId, label, minChoices, maxChoices, extraItemPrice, itemIds, items, qtyPerPerson, qtyUnit } = req.body
     const ruleId = parseInt(req.params.ruleId)
     const data = {}
     if (categoryId !== undefined) data.categoryId = categoryId ? parseInt(categoryId) : null
@@ -527,13 +583,20 @@ router.put('/packages/:id/rules/:ruleId', async (req, res) => {
     if (minChoices !== undefined) data.minChoices = parseInt(minChoices)
     if (maxChoices !== undefined) data.maxChoices = parseInt(maxChoices)
     if (extraItemPrice !== undefined) data.extraItemPrice = parseFloat(extraItemPrice)
+    if (qtyPerPerson !== undefined) data.qtyPerPerson = qtyPerPerson != null ? parseFloat(qtyPerPerson) : null
+    if (qtyUnit !== undefined) data.qtyUnit = qtyUnit || null
 
-    // Replace allowed items if itemIds provided
-    if (itemIds !== undefined) {
+    // Replace allowed items if items or itemIds provided
+    const itemsPayload = items !== undefined ? items : (itemIds !== undefined ? itemIds.map(id => ({ menuItemId: id, premiumPrice: null })) : undefined)
+    if (itemsPayload !== undefined) {
       await prisma.packageCategoryRuleItem.deleteMany({ where: { ruleId } })
-      if (itemIds.length > 0) {
+      if (itemsPayload.length > 0) {
         await prisma.packageCategoryRuleItem.createMany({
-          data: itemIds.map(id => ({ ruleId, menuItemId: parseInt(id) })),
+          data: itemsPayload.map(it => ({
+            ruleId,
+            menuItemId: parseInt(it.menuItemId ?? it),
+            premiumPrice: it.premiumPrice != null ? parseFloat(it.premiumPrice) : null,
+          })),
         })
       }
     }
@@ -680,4 +743,109 @@ router.get('/menu/export', async (req, res) => {
   }
 })
 
+
+// ── REWARDS SETTINGS ──
+
+// GET /api/admin/rewards/settings
+router.get('/rewards/settings', authMiddleware, adminOnly, async (req, res) => {
+  try {
+    let s = await prisma.rewardSettings.findUnique({ where: { id: 1 } })
+    if (!s) s = await prisma.rewardSettings.create({ data: { id: 1 } })
+    res.json(s)
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to load reward settings' })
+  }
+})
+
+// PUT /api/admin/rewards/settings
+router.put('/rewards/settings', authMiddleware, adminOnly, async (req, res) => {
+  try {
+    const { enabled, pointsPer100, pointValue, expiryDays, minRedeem, silverMin, silverDiscount, goldMin, goldDiscount } = req.body
+    const data = {}
+    if (enabled !== undefined) data.enabled = Boolean(enabled)
+    if (pointsPer100 !== undefined) data.pointsPer100 = parseFloat(pointsPer100)
+    if (pointValue !== undefined) data.pointValue = parseFloat(pointValue)
+    if (expiryDays !== undefined) data.expiryDays = expiryDays ? parseInt(expiryDays) : null
+    if (minRedeem !== undefined) data.minRedeem = parseInt(minRedeem)
+    if (silverMin !== undefined) data.silverMin = parseInt(silverMin)
+    if (silverDiscount !== undefined) data.silverDiscount = parseFloat(silverDiscount)
+    if (goldMin !== undefined) data.goldMin = parseInt(goldMin)
+    if (goldDiscount !== undefined) data.goldDiscount = parseFloat(goldDiscount)
+    const s = await prisma.rewardSettings.upsert({ where: { id: 1 }, update: data, create: { id: 1, ...data } })
+    res.json(s)
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to save reward settings' })
+  }
+})
+
+// GET /api/admin/rewards/customers
+router.get('/rewards/customers', authMiddleware, adminOnly, async (req, res) => {
+  try {
+    const settings = await prisma.rewardSettings.findUnique({ where: { id: 1 } }) || { pointsPer100: 4, pointValue: 0.25, silverMin: 500, goldMin: 2000 }
+    const users = await prisma.user.findMany({
+      where: { role: 'CUSTOMER' },
+      include: { bookings: { where: { status: 'COMPLETED' }, select: { total: true } } },
+      orderBy: { createdAt: 'desc' },
+    })
+    const result = users.map(u => {
+      const totalSpend = u.bookings.reduce((s, b) => s + (b.total || 0), 0)
+      const points = Math.floor(totalSpend / 100) * settings.pointsPer100
+      const tier = points >= settings.goldMin ? 'Gold' : points >= settings.silverMin ? 'Silver' : 'Bronze'
+      return { id: u.id, name: u.name, email: u.email, phone: u.phone, totalSpend, points, tier, bookingCount: u.bookings.length }
+    })
+    res.json(result)
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to load customer rewards' })
+  }
+})
+
+
+// ── DELIVERY SETTINGS ──
+
+// GET /api/admin/delivery/settings
+router.get('/delivery/settings', async (req, res) => {
+  try {
+    let s = await prisma.deliverySettings.findUnique({ where: { id: 1 } })
+    if (!s) s = await prisma.deliverySettings.create({ data: { id: 1 } })
+    res.json(s)
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to load delivery settings' })
+  }
+})
+
+// PUT /api/admin/delivery/settings
+router.put('/delivery/settings', async (req, res) => {
+  try {
+    const fields = ['baseAddress','baseLat','baseLng','freeUpToKm','tier1MaxKm','tier1Charge','tier2MaxKm','tier2Charge','tier3MaxKm','tier3Charge','tier4MaxKm','tier4Charge','tier5Charge','maxDeliveryKm']
+    const data = {}
+    fields.forEach(f => { if (req.body[f] !== undefined) data[f] = typeof req.body[f] === 'string' ? parseFloat(req.body[f]) || req.body[f] : req.body[f] })
+    if (req.body.baseAddress) data.baseAddress = req.body.baseAddress
+    const s = await prisma.deliverySettings.upsert({ where: { id: 1 }, update: data, create: { id: 1, ...data } })
+    res.json(s)
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to save delivery settings' })
+  }
+})
+
 module.exports = router
+
+// GET /api/admin/pricing/settings
+router.get('/pricing/settings', async (req, res) => {
+  try {
+    let s = await prisma.pricingSettings.findUnique({ where: { id: 1 } })
+    if (!s) s = await prisma.pricingSettings.create({ data: { id: 1 } })
+    res.json(s)
+  } catch (err) { res.status(500).json({ error: err.message }) }
+})
+
+// PUT /api/admin/pricing/settings
+router.put('/pricing/settings', async (req, res) => {
+  try {
+    const fields = ['packingCostPercent','mealboxDelivery','packedFoodDelivery','cateringDelivery','serviceChargeFlat','serviceChargeFreeAbove']
+    const data = {}
+    fields.forEach(f => { if (req.body[f] !== undefined) data[f] = Number(req.body[f]) })
+    const s = await prisma.pricingSettings.upsert({ where: { id: 1 }, update: data, create: { id: 1, ...data } })
+    res.json(s)
+  } catch (err) { res.status(500).json({ error: err.message }) }
+})
+

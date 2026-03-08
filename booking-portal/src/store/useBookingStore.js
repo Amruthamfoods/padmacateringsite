@@ -143,14 +143,20 @@ export const useBookingStore = create(
       // Get booking payload for API
       getBookingPayload: () => {
         const state = get()
+        const guestCount = state.eventDetails.guestCount || 0
+        const vegCount = state.eventDetails.vegCount || 0
+        const nonVegCount = state.eventDetails.nonVegCount || 0
+        // Ensure counts sum to guestCount
+        const safeVeg = vegCount + nonVegCount === guestCount ? vegCount : 0
+        const safeNonVeg = vegCount + nonVegCount === guestCount ? nonVegCount : guestCount
         return {
           city: state.eventDetails.city,
-          eventType: state.eventDetails.occasion,
+          eventType: state.eventDetails.occasion || state.eventDetails.eventType || 'Event',
           eventDate: state.eventDetails.eventDate,
           timeSlot: state.eventDetails.timeSlot,
-          guestCount: state.eventDetails.guestCount,
-          vegCount: state.eventDetails.vegCount,
-          nonVegCount: state.eventDetails.nonVegCount,
+          guestCount,
+          vegCount: safeVeg,
+          nonVegCount: safeNonVeg,
           venueAddress: state.eventDetails.venueAddress,
           deliveryType: state.eventDetails.deliveryType,
           servicePreference: state.menuPreferences.servicePreference,

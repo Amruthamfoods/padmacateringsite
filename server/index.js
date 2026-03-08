@@ -10,7 +10,7 @@ const { PrismaClient } = require('@prisma/client')
 // Security & utilities
 const validateEnv        = require('./utils/envValidator')
 const logger             = require('./utils/logger')
-const { authLimiter, bookingLimiter } = require('./middleware/rateLimiter')
+const { authLimiter, authReadLimiter, bookingLimiter } = require('./middleware/rateLimiter')
 
 // Routes
 const authRouter    = require('./routes/auth')
@@ -19,6 +19,7 @@ const bookingRouter = require('./routes/booking')
 const couponRouter  = require('./routes/coupon')
 const adminRouter   = require('./routes/admin')
 const quoteRouter   = require('./routes/quote')
+const paymentRouter = require('./routes/payment')
 
 // Validate environment on startup
 validateEnv()
@@ -42,12 +43,71 @@ app.use(cookieParser())
 const csrfProtection = csrf({ cookie: false })
 
 /* ─── Mount routers ─── */
-app.use('/api/auth',    authLimiter, authRouter)
+app.use('/api/auth', (req, res, next) => {
+  if (req.method === 'GET' || req.path === '/profile') return authReadLimiter(req, res, next)
+  return authLimiter(req, res, next)
+}, authRouter)
 app.use('/api/menu',    menuRouter)
 app.use('/api/booking', bookingLimiter, bookingRouter)
 app.use('/api/coupon',  couponRouter)
 app.use('/api/admin',   adminRouter)
 app.use('/api/quote',   quoteRouter)
+app.use('/api/payment', paymentRouter)
+
+// Public: pricing settings for frontend modal
+app.get('/api/pricing/settings', async (req, res) => {
+  try {
+    let s = await prisma.pricingSettings.findUnique({ where: { id: 1 } })
+    if (!s) s = { packingCostPercent: 5, mealboxDelivery: 500, packedFoodDelivery: 500, cateringDelivery: 1500, serviceChargeFlat: 1500, serviceChargeFreeAbove: 100 }
+    res.json(s)
+  } catch { res.json({ packingCostPercent: 5, mealboxDelivery: 500, packedFoodDelivery: 500, cateringDelivery: 1500, serviceChargeFlat: 1500, serviceChargeFreeAbove: 100 }) }
+})
+
+// ── Public delivery charge calculator ──
+const { PrismaClient: PrismaCalc } = require('@prisma/client')
+const prismaCalc = new PrismaCalc()
+app.post('/api/delivery/calculate', async (req, res) => {
+  try {
+    const { lat, lng, guestCount } = req.body
+    if (!lat || !lng) return res.status(400).json({ error: 'lat and lng required' })
+    let s = await prismaCalc.deliverySettings.findUnique({ where: { id: 1 } })
+    if (!s) s = { baseLat: 17.7261, baseLng: 83.3044, freeUpToKm: 0, tier1MaxKm: 5, tier1Charge: 300, tier2MaxKm: 10, tier2Charge: 600, tier3MaxKm: 15, tier3Charge: 800, tier4MaxKm: 20, tier4Charge: 1200, tier5Charge: 1500, maxDeliveryKm: 30 }
+    // Haversine formula
+    const R = 6371
+    const dLat = (lat - s.baseLat) * Math.PI / 180
+    const dLng = (lng - s.baseLng) * Math.PI / 180
+    const a = Math.sin(dLat/2)**2 + Math.cos(s.baseLat*Math.PI/180)*Math.cos(lat*Math.PI/180)*Math.sin(dLng/2)**2
+    const distanceKm = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+    const km = Math.round(distanceKm * 10) / 10
+    if (distanceKm > s.maxDeliveryKm) {
+      return res.json({ distanceKm: km, charge: null, outOfRange: true, helpline: '+91 86 86 622 722' })
+    }
+    let charge = 0
+    if (distanceKm <= s.freeUpToKm) charge = 0
+    else if (distanceKm <= s.tier1MaxKm) charge = s.tier1Charge
+    else if (distanceKm <= s.tier2MaxKm) charge = s.tier2Charge
+    else if (distanceKm <= s.tier3MaxKm) charge = s.tier3Charge
+    else if (distanceKm <= (s.tier4MaxKm || 20)) charge = s.tier4Charge
+    else charge = s.tier5Charge || s.tier4Charge
+    // 100+ packs: free up to 10km, Rs300 off beyond 10km
+    const guests = parseInt(guestCount) || 0
+    let bulkSaving = 0
+    if (guests >= 100) {
+      if (distanceKm <= 10) {
+        bulkSaving = charge
+        charge = 0
+      } else if (charge > 0) {
+        bulkSaving = 300
+        charge = Math.max(0, charge - 300)
+      }
+    }
+    res.json({ distanceKm: km, charge, bulkSaving })
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to calculate delivery charge' })
+  }
+})
+
+
 
 /* ─── Serve booking portal static files at /booking ─── */
 const bookingDist = path.join(__dirname, '../booking-portal/dist')

@@ -14,7 +14,8 @@ const transporter = nodemailer.createTransport({
 })
 
 const STAFF_RATE = parseInt(process.env.STAFF_RATE_PER_PERSON || 650)
-const GST_RATE = parseFloat(process.env.GST_RATE || 0.05)
+const _gst = parseFloat(process.env.GST_RATE || 0.05)
+const GST_RATE = _gst > 1 ? _gst / 100 : _gst
 
 // POST /api/booking - Create a new booking
 router.post('/', validate('createBooking'), async (req, res) => {
@@ -36,8 +37,7 @@ router.post('/', validate('createBooking'), async (req, res) => {
     })
 
     if (items.length !== menuItemIds.length) {
-      logger.warn('Booking: Invalid menu items', { requested: menuItemIds.length, found: items.length })
-      return res.status(400).json({ error: 'One or more menu items not found or inactive' })
+      logger.warn('Booking: Some menu items not found/stale', { requested: menuItemIds.length, found: items.length })
     }
 
     // Calculate price server-side (no trust on client totalAmount)

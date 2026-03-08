@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import './App.css'
 import './page-styles.css'
@@ -27,6 +27,9 @@ import CouponsPage from './pages/admin/CouponsPage'
 import CustomersPage from './pages/admin/CustomersPage'
 import SettingsPage from './pages/admin/SettingsPage'
 import QuotesAdminPage from './pages/admin/QuotesAdminPage'
+import RewardsAdminPage from './pages/admin/RewardsAdminPage'
+import DeliveryAdminPage from './pages/admin/DeliveryAdminPage'
+import PricingAdminPage from './pages/admin/PricingAdminPage'
 import ConsultationPage from './pages/ConsultationPage'
 
 function ScrollToTop() {
@@ -54,7 +57,6 @@ function AdminRoute({ children }) {
 function AppInner() {
   const [menuOpen, setMenuOpen] = useState(false)
   const { pathname } = useLocation()
-  const navigate = useNavigate()
 
   useScrollReveal()
 
@@ -62,7 +64,7 @@ function AppInner() {
   const isFullPage = isAdminRoute ||
     ['/login', '/register', '/account'].some(p => pathname === p || pathname.startsWith(p + '/'))
 
-  const goToBooking = () => { window.location.href = '/booking/' }
+  const goToBooking = () => { window.location.href = 'https://booking.padmacatering.com' }
 
   return (
     <>
@@ -100,6 +102,9 @@ function AppInner() {
             <Route path="customers" element={<CustomersPage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="quotes" element={<QuotesAdminPage />} />
+            <Route path="rewards" element={<RewardsAdminPage />} />
+            <Route path="delivery" element={<DeliveryAdminPage />} />
+            <Route path="pricing" element={<PricingAdminPage />} />
           </Route>
         </Routes>
       </main>

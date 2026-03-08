@@ -1,75 +1,87 @@
 import { useState, useMemo, useEffect } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { createPortal } from 'react-dom'
+import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import api from '../lib/api'
-import BookingSteps from '../components/BookingSteps'
 import { useBookingStore } from '../store/useBookingStore'
 
-const DELIVERY_CHARGES = { GATE: 0, DOORSTEP: 500, DOORSTEP_SERVICE: 1500 }
-const DELIVERY_LABELS = { GATE: 'Gate Delivery', DOORSTEP: 'Doorstep', DOORSTEP_SERVICE: 'Doorstep + Service' }
-const STAFF_RATE = 800  // ₹ per staff member
+const STAFF_RATE = 800
 
-function calcPricing(menuItems, pkg, eventDetails, staffCount, coupon, servicePref) {
+// Maps admin-side serviceType labels to booking portal keys
+const SERVICE_TYPE_MAP = { 'Meal Box': 'Mealbox', 'Delivery': 'PackedFood', 'Catering': 'Catering' }
+
+const DEFAULT_PS = { packingCostPercent: 5, mealboxDelivery: 500, packedFoodDelivery: 500, cateringDelivery: 2000, serviceChargeFlat: 1500, serviceChargeFreeAbove: 100 }
+
+function calcPricing(menuItems, pkg, eventDetails, staffCount, coupon, servicePref, ps = DEFAULT_PS) {
   const guestCount = eventDetails.guestCount || 0
-
-  // Base price from package tier
   let pricePerPerson = 0
   if (pkg?.pricingTiers?.length) {
     const sorted = [...pkg.pricingTiers].sort((a, b) => b.minGuests - a.minGuests)
     const tier = sorted.find(t => guestCount >= t.minGuests) || sorted[sorted.length - 1]
     pricePerPerson = tier?.pricePerPerson || 0
   }
-
-  // NinjaBuffet adds a premium per plate
-  if (servicePref === 'NinjaBuffet') {
-    pricePerPerson += 150 // Example buffet premium
-  }
-
+  // pricePerPerson = package tier price only (e.g. ₹230)
   const basePrice = pricePerPerson * guestCount
-  const packingCost = servicePref === 'NinjaBox' ? Math.round(basePrice * 0.05) : 0 // Packing cost applies to box delivery
-
-  // Extra item charges
-  const addonCost = menuItems.reduce((sum, i) => sum + (i.extraCharge || 0) * guestCount, 0)
-
-  // Delivery charge based on preference
-  const deliveryCharge = servicePref === 'NinjaBuffet' ? 1500 : 500
-
-  // Staff charge based on preference
-  const finalStaffCount = servicePref === 'NinjaBuffet' ? Math.max(1, Math.ceil(guestCount / 25)) : staffCount
-  const staffCharge = (finalStaffCount || 0) * STAFF_RATE
-
-  const subtotal = basePrice + packingCost + addonCost + deliveryCharge + staffCharge
-
-  // Coupon
+  const packingCost = (servicePref === 'Mealbox' || servicePref === 'PackedFood') ? Math.round(basePrice * (Number(ps.packingCostPercent || 5) / 100)) : 0
+  const addonCost = menuItems.reduce((sum, i) => {
+    const delta = Math.max(0, (i.quantity || 0) - (i.baseQuantity || 0))
+    return sum + delta * (i.pricePerUnit || 0)
+  }, 0)
+  const buffetSurcharge = 0
+  const buffetSurchargePerPerson = 0
+  const deliveryCharge = servicePref === 'Catering' ? Number(ps.cateringDelivery || 1500) : servicePref === 'PackedFood' ? Number(ps.packedFoodDelivery || 500) : Number(ps.mealboxDelivery || 500)
+  const serviceFlat = Number(ps.serviceChargeFlat || 1500)
+  const serviceFreeAbove = Number(ps.serviceChargeFreeAbove || 100)
+  const staffChargeOriginal = servicePref === 'Catering' ? serviceFlat : (staffCount || 0) * STAFF_RATE
+  const staffCharge = servicePref === 'Catering' && guestCount >= serviceFreeAbove ? 0 : staffChargeOriginal
+  const finalStaffCount = servicePref === 'Catering' ? 1 : staffCount
+  const subtotal = basePrice + buffetSurcharge + packingCost + addonCost + deliveryCharge + staffCharge
   let discount = 0
   if (coupon?.discountPercent) discount = Math.round(subtotal * coupon.discountPercent / 100)
   if (coupon?.discountFlat) discount = coupon.discountFlat
-
   const gst = Math.round((subtotal - discount) * 0.05)
   const total = subtotal - discount + gst
-
-  return { pricePerPerson, basePrice, packingCost, addonCost, deliveryCharge, staffCharge, subtotal, discount, gst, total, finalStaffCount }
+  return { pricePerPerson, basePrice, buffetSurcharge, buffetSurchargePerPerson, packingCost, addonCost, deliveryCharge, staffCharge, staffChargeOriginal, subtotal, discount, gst, total, finalStaffCount }
 }
 
 export default function ServicePreferenceModal({ onClose }) {
   const navigate = useNavigate()
   const { eventDetails, menuPreferences, setMenuPreferences, setPricing } = useBookingStore()
-
   const pkg = menuPreferences.selectedPackage
+  // Compute allowed service keys from package's serviceType field
+  const allowedServices = pkg?.serviceType
+    ? pkg.serviceType.split(',').map(s => SERVICE_TYPE_MAP[s.trim()]).filter(Boolean)
+    : ['Mealbox', 'PackedFood', 'Catering']
+  const [pricingSettings, setPricingSettings] = useState(DEFAULT_PS)
 
-  const [items, setItems] = useState(() => menuPreferences.menuItems || [])
-  const [servicePref, setServicePref] = useState(menuPreferences.servicePreference || 'NinjaBox')
+  useEffect(() => {
+    api.get('/pricing/settings').then(r => setPricingSettings({ ...DEFAULT_PS, ...r.data })).catch(() => {})
+  }, [])
+
+  const [items, setItems] = useState(() =>
+    (menuPreferences.menuItems || []).map(i => ({
+      ...i,
+      baseQuantity: i.baseQuantity != null ? i.baseQuantity : i.quantity,
+      pricePerUnit: i.pricePerUnit != null ? i.pricePerUnit : 0,
+    }))
+  )
+  const [servicePref, setServicePref] = useState(() => {
+    const saved = menuPreferences.servicePreference
+    const allowed = pkg?.serviceType
+      ? pkg.serviceType.split(',').map(s => SERVICE_TYPE_MAP[s.trim()]).filter(Boolean)
+      : ['Mealbox', 'PackedFood', 'Catering']
+    if (saved && allowed.includes(saved)) return saved
+    return allowed[0] || 'Mealbox'
+  })
   const [staffCount, setStaffCount] = useState(eventDetails.staffCount || 0)
   const [couponCode, setCouponCode] = useState('')
   const [coupon, setCoupon] = useState(null)
   const [couponLoading, setCouponLoading] = useState(false)
 
-  // Auto-sync stores when servicePref changes
   useEffect(() => {
     setMenuPreferences({ servicePreference: servicePref })
   }, [servicePref, setMenuPreferences])
 
-  // Group items by category
   const grouped = useMemo(() => {
     const map = {}
     items.forEach(item => {
@@ -81,8 +93,8 @@ export default function ServicePreferenceModal({ onClose }) {
   }, [items])
 
   const pricing = useMemo(
-    () => calcPricing(items, pkg, eventDetails, staffCount, coupon, servicePref),
-    [items, pkg, eventDetails, staffCount, coupon, servicePref]
+    () => calcPricing(items, pkg, eventDetails, staffCount, coupon, servicePref, pricingSettings),
+    [items, pkg, eventDetails, staffCount, coupon, servicePref, pricingSettings]
   )
 
   function adjustQuantity(itemId, delta) {
@@ -91,6 +103,19 @@ export default function ServicePreferenceModal({ onClose }) {
       const step = item.unit === 'kg' ? 0.1 : 1
       const newQty = Math.max(step, Math.round((item.quantity + delta * step) * 10) / 10)
       return { ...item, quantity: newQty }
+    }))
+  }
+
+  function editQuantity(itemId, raw) {
+    setItems(prev => prev.map(item => {
+      if (item.id !== itemId) return item
+      const step = item.unit === 'kg' ? 0.1 : 1
+      const parsed = parseFloat(raw)
+      if (isNaN(parsed) || parsed <= 0) return item
+      const newQty = item.unit === 'kg'
+        ? Math.round(parsed * 10) / 10
+        : Math.round(parsed)
+      return { ...item, quantity: Math.max(step, newQty) }
     }))
   }
 
@@ -106,371 +131,231 @@ export default function ServicePreferenceModal({ onClose }) {
         code: couponCode.trim().toUpperCase(),
         orderValue: pricing.subtotal,
       })
-      if (data.valid) {
-        setCoupon(data)
-        toast.success(data.message || 'Coupon applied!')
-      } else {
-        toast.error(data.message || 'Invalid coupon code')
-        setCoupon(null)
-      }
-    } catch {
-      toast.error('Could not validate coupon')
-      setCoupon(null)
-    } finally {
-      setCouponLoading(false)
-    }
+      if (data.valid) { setCoupon(data); toast.success(data.message || 'Coupon applied!') }
+      else { toast.error(data.message || 'Invalid coupon code'); setCoupon(null) }
+    } catch { toast.error('Could not validate coupon'); setCoupon(null) }
+    finally { setCouponLoading(false) }
   }
 
   function handleContinue() {
     if (items.length === 0) { toast.error('No menu items selected'); return }
     setMenuPreferences({ menuItems: items })
     setPricing({
-      basePrice: pricing.basePrice,
-      packingCost: pricing.packingCost,
-      addonCost: pricing.addonCost,
-      deliveryCharge: pricing.deliveryCharge,
-      staffCharge: pricing.staffCharge,
-      subtotal: pricing.subtotal,
-      coupon: coupon?.code || null,
-      discount: pricing.discount,
-      gst: pricing.gst,
-      total: pricing.total,
-      pricePerPerson: pricing.pricePerPerson,
+      basePrice: pricing.basePrice, buffetSurcharge: pricing.buffetSurcharge, packingCost: pricing.packingCost,
+      addonCost: pricing.addonCost, deliveryCharge: pricing.deliveryCharge,
+      staffCharge: pricing.staffCharge, staffChargeOriginal: pricing.staffChargeOriginal,
+      subtotal: pricing.subtotal, coupon: coupon?.code || null, discount: pricing.discount,
+      gst: pricing.gst, total: pricing.total, pricePerPerson: pricing.pricePerPerson,
     })
     navigate('/payment')
   }
 
-  if (!pkg || items.length === 0) {
-    return null
-  }
+  if (!pkg || items.length === 0) return null
 
-  const { occasion, eventDate, timeSlot, guestCount, vegCount, nonVegCount } = eventDetails
+  const { eventDate, timeSlot, guestCount } = eventDetails
 
-  return (
-    <div className="modal-overlay" onClick={onClose} style={{ zIndex: 1000 }}>
-      {/* Modal Container */}
-      <div
-        className="modal-content"
-        onClick={e => e.stopPropagation()}
-        style={{
-          display: 'flex', flexDirection: 'column',
-          maxWidth: 900, width: '95%',
-          maxHeight: '90vh', overflow: 'hidden',
-          borderRadius: 24, background: '#fff',
-          boxShadow: '0 24px 48px rgba(0,0,0,0.2)',
-          animation: 'modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-        }}
-      >
-        {/* Top Header: Full-Bleed Figma Style Image */}
-        <div style={{ position: 'relative', width: '100%', height: '180px', background: '#e5e7eb', flexShrink: 0 }}>
-          <img
-            src="https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=1200&auto=format&fit=crop"
-            alt="Delicious food"
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-          />
+  return createPortal(
+    <div onClick={onClose} style={{
+      position: 'fixed', inset: 0, zIndex: 9000,
+      background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+    }}>
+      <div onClick={e => e.stopPropagation()} style={{
+        display: 'flex', flexDirection: 'column',
+        width: '100%', maxWidth: 860,
+        maxHeight: '92vh', overflow: 'hidden',
+        borderRadius: 20, background: 'var(--bg-page)',
+        boxShadow: '0 24px 60px rgba(0,0,0,0.25)',
+        animation: 'modalPop 0.25s cubic-bezier(0.34,1.56,0.64,1)',
+      }}>
 
-          <button type="button" onClick={onClose} style={{
-            position: 'absolute', top: 16, right: 16,
-            background: 'rgba(255,255,255,0.9)', border: 'none',
-            width: 36, height: 36, borderRadius: '50%',
-            color: '#111827', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-            zIndex: 10
-          }}>
-            <i className="fa-solid fa-times" />
-          </button>
-
-          {/* Gradient Overlay for Text Readability */}
-          <div style={{
-            position: 'absolute', bottom: 0, left: 0, right: 0,
-            background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)',
-            padding: '48px 24px 16px 24px', color: '#fff'
-          }}>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '1.8rem', fontWeight: 800, margin: '0 0 4px 0', textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>
-              Choose Your Service Preference
-            </h1>
-            <p style={{ fontSize: '0.95rem', opacity: 0.9, margin: 0, textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}>
-              Review your menu and exact pricing below.
-            </p>
+        {/* ── Header ── */}
+        <div style={{
+          flexShrink: 0, display: 'flex', alignItems: 'center',
+          padding: '14px 20px', background: 'var(--bg)',
+          borderBottom: '0.5px solid var(--separator-nm)', gap: 12,
+        }}>
+          <img src="/booking/img/amrutham-logo.png" alt="Amrutham" style={{ height: 36, objectFit: 'contain' }} />
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--heading)', lineHeight: 1.2 }}>Review &amp; Confirm</div>
+            <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 1 }}>{pkg.name} · {guestCount} guests · {eventDate}</div>
           </div>
+          <button onClick={onClose} style={{
+            width: 32, height: 32, borderRadius: '50%',
+            background: 'var(--fill-tertiary)', border: 'none', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: 'var(--muted)', fontSize: 16, flexShrink: 0,
+          }}>×</button>
         </div>
 
-        <div className="booking-center" style={{ maxWidth: 1100, padding: '24px', overflowY: 'auto' }}>
+        {/* ── Scrollable body ── */}
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '20px 20px 0' }}>
 
-          {/* ── Service Preference Toggle ── */}
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 40 }}>
-            <div style={{ display: 'flex', gap: 16, background: '#fff', padding: 8, borderRadius: 16, border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)' }}>
-              <button
-                onClick={() => setServicePref('NinjaBox')}
-                style={{
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '16px 32px',
-                  borderRadius: 12, border: 'none', cursor: 'pointer', transition: 'all 0.2s',
-                  background: servicePref === 'NinjaBox' ? '#fef2f2' : 'transparent',
-                  color: servicePref === 'NinjaBox' ? 'var(--red)' : 'var(--text-muted)',
-                  boxShadow: servicePref === 'NinjaBox' ? '0 2px 8px rgba(220, 38, 38, 0.15)' : 'none'
-                }}
-              >
-                <i className="fa-solid fa-box-open" style={{ fontSize: '1.8rem' }} />
-                <span style={{ fontWeight: 800, fontSize: '1.1rem' }}>NinjaBox</span>
-                <span style={{ fontSize: '0.8rem', opacity: 0.8 }}>Delivery Only</span>
+          {/* Service toggle */}
+          <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
+            {[
+              { key: 'Mealbox', icon: 'fa-solid fa-box-open', label: 'Mealbox', sub: 'Individual meal boxes' },
+              { key: 'PackedFood', icon: 'fa-solid fa-bag-shopping', label: 'Packed Food', sub: 'Packed containers, self-serve' },
+              { key: 'Catering', icon: 'fa-solid fa-bell-concierge', label: 'Catering', sub: 'Full setup + service at venue' },
+            ].filter(opt => allowedServices.includes(opt.key)).map(opt => (
+              <button key={opt.key} onClick={() => setServicePref(opt.key)} style={{
+                flex: 1, display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px',
+                borderRadius: 12, border: `1.5px solid ${servicePref === opt.key ? 'var(--primary)' : 'var(--separator-nm)'}`,
+                background: servicePref === opt.key ? 'var(--primary-bg)' : 'var(--bg)',
+                cursor: 'pointer', transition: 'all 0.15s', textAlign: 'left', fontFamily: 'inherit',
+              }}>
+                <i className={opt.icon} style={{ fontSize: '1.1rem', color: servicePref === opt.key ? 'var(--primary)' : 'var(--muted)', flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: 14, color: servicePref === opt.key ? 'var(--primary)' : 'var(--heading)', lineHeight: 1.2 }}>{opt.label}</div>
+                  <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>{opt.sub}</div>
+                </div>
               </button>
-              <button
-                onClick={() => setServicePref('NinjaBuffet')}
-                style={{
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '16px 32px',
-                  borderRadius: 12, border: 'none', cursor: 'pointer', transition: 'all 0.2s',
-                  background: servicePref === 'NinjaBuffet' ? '#fef2f2' : 'transparent',
-                  color: servicePref === 'NinjaBuffet' ? 'var(--red)' : 'var(--text-muted)',
-                  boxShadow: servicePref === 'NinjaBuffet' ? '0 2px 8px rgba(220, 38, 38, 0.15)' : 'none'
-                }}
-              >
-                <i className="fa-solid fa-bell-concierge" style={{ fontSize: '1.8rem' }} />
-                <span style={{ fontWeight: 800, fontSize: '1.1rem' }}>NinjaBuffet</span>
-                <span style={{ fontSize: '0.8rem', opacity: 0.8 }}>Full Service</span>
-              </button>
-            </div>
+            ))}
           </div>
 
-          <div className="summary-layout">
+          {/* Two-column layout */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 16, alignItems: 'start' }} className="modal-cols">
 
-            {/* ── LEFT: Item review + controls ── */}
+            {/* LEFT: Menu items */}
             <div>
-              {/* Items grouped by category */}
               {Object.entries(grouped).map(([category, catItems]) => (
-                <div key={category} className="summary-card">
-                  <div className="summary-card-header">
-                    <i className="fa-solid fa-bowl-food" style={{ color: 'var(--red)' }} /> {category}
+                <div key={category} style={{ background: 'var(--bg)', borderRadius: 12, marginBottom: 12, overflow: 'hidden', border: '0.5px solid var(--separator-nm)' }}>
+                  <div style={{ padding: '10px 14px', borderBottom: '0.5px solid var(--separator-nm)', fontWeight: 600, fontSize: 13, color: 'var(--heading)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <i className="fa-solid fa-bowl-food" style={{ color: 'var(--primary)', fontSize: 12 }} /> {category}
                   </div>
-                  <div className="summary-card-body">
-                    {catItems.map(item => (
-                      <div key={item.id} className="review-item-row">
-                        <div className="review-item-left">
-                          <span
+                  <div style={{ padding: '8px 0' }}>
+                    {catItems.map((item, i) => (
+                      <div key={item.id} style={{
+                        display: 'flex', alignItems: 'center', gap: 10, padding: '7px 14px',
+                        borderBottom: i < catItems.length - 1 ? '0.5px solid var(--separator-nm)' : 'none',
+                      }}>
+                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: item.type === 'VEG' ? '#34C759' : '#FF3B30', flexShrink: 0 }} />
+                        <span style={{ flex: 1, fontSize: 13, color: 'var(--heading)', fontWeight: 500 }}>{item.name}</span>
+                        {item.extraCharge > 0 && <span style={{ fontSize: 11, color: 'var(--ios-orange)', fontWeight: 600 }}>+₹{item.extraCharge}/pl</span>}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                          <button onClick={() => adjustQuantity(item.id, -1)} style={{ width: 22, height: 22, borderRadius: '50%', border: 'none', background: 'var(--fill-tertiary)', fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--heading)' }}>−</button>
+                          <input
+                            type="number"
+                            value={item.quantity}
+                            step={item.unit === 'kg' ? 0.1 : 1}
+                            min={item.unit === 'kg' ? 0.1 : 1}
+                            onChange={e => editQuantity(item.id, e.target.value)}
                             style={{
-                              display: 'inline-block', width: 9, height: 9, borderRadius: '50%',
-                              background: item.type === 'VEG' ? 'var(--veg)' : 'var(--nonveg)',
-                              flexShrink: 0,
+                              width: 70, textAlign: 'center', fontWeight: 700, fontSize: 13,
+                              color: 'var(--heading)', background: 'var(--fill-tertiary)',
+                              border: '1.5px solid var(--primary)', borderRadius: 8,
+                              outline: 'none', padding: '2px 4px', fontFamily: 'inherit',
                             }}
                           />
-                          <span className="review-item-name">{item.name}</span>
-                          {item.extraCharge > 0 && (
-                            <span style={{ fontSize: '0.72rem', color: '#D97706', fontWeight: 700, flexShrink: 0 }}>
-                              +₹{item.extraCharge}/plate
-                            </span>
-                          )}
+                          <span style={{ fontSize: 11, color: 'var(--muted)', fontWeight: 500 }}>{item.unit}</span>
+                          <button onClick={() => adjustQuantity(item.id, 1)} style={{ width: 22, height: 22, borderRadius: '50%', border: 'none', background: 'var(--primary)', fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>+</button>
                         </div>
-                        <div className="qty-control">
-                          <button
-                            className="qty-btn"
-                            type="button"
-                            onClick={() => adjustQuantity(item.id, -1)}
-                          >−</button>
-                          <span className="qty-val">{item.quantity} {item.unit}</span>
-                          <button
-                            className="qty-btn"
-                            type="button"
-                            onClick={() => adjustQuantity(item.id, 1)}
-                          >+</button>
-                        </div>
-                        <button className="review-item-remove" type="button" onClick={() => removeItem(item.id)} title="Remove">
-                          <i className="fa-solid fa-times" />
-                        </button>
+                        <button onClick={() => removeItem(item.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', padding: '0 2px', fontSize: 14, lineHeight: 1 }}>×</button>
                       </div>
                     ))}
                   </div>
                 </div>
               ))}
 
-              {/* Delivery & Staff section */}
-              <div className="summary-card">
-                <div className="summary-card-header">
-                  <i className="fa-solid fa-truck" style={{ color: 'var(--red)' }} /> Delivery & Setup
-                </div>
-                <div className="summary-card-body">
-                  <div className="review-item-row">
-                    <div className="review-item-left">
-                      <i className="fa-solid fa-location-dot" style={{ color: 'var(--text-muted)', width: 14 }} />
-                      <span className="review-item-name">{servicePref === 'NinjaBuffet' ? 'Premium Setup + Service' : 'Doorstep Delivery'}</span>
-                    </div>
-                    <span style={{ fontWeight: 700, color: pricing.deliveryCharge > 0 ? 'var(--text-dark)' : 'var(--veg)', fontSize: '0.9rem', flexShrink: 0 }}>
-                      {pricing.deliveryCharge > 0 ? `₹${pricing.deliveryCharge}` : 'Free'}
-                    </span>
+              {/* Staff (Mealbox/PackedFood only) */}
+              {servicePref !== 'Catering' && (
+                <div style={{ background: 'var(--bg)', borderRadius: 12, padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '0.5px solid var(--separator-nm)', marginBottom: 12 }}>
+                  <span style={{ fontSize: 13, color: 'var(--heading)', fontWeight: 500 }}>
+                    <i className="fa-solid fa-user-tie" style={{ color: 'var(--muted)', marginRight: 8 }} />Add Waitstaff (₹{STAFF_RATE}/person)
+                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <button onClick={() => setStaffCount(s => Math.max(0, s - 1))} style={{ width: 26, height: 26, borderRadius: '50%', border: 'none', background: 'var(--fill-tertiary)', fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>−</button>
+                    <span style={{ fontSize: 14, fontWeight: 700, minWidth: 24, textAlign: 'center' }}>{staffCount}</span>
+                    <button onClick={() => setStaffCount(s => s + 1)} style={{ width: 26, height: 26, borderRadius: '50%', border: 'none', background: 'var(--primary)', fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>+</button>
                   </div>
-                  {servicePref === 'NinjaBox' && (
-                    <div className="review-item-row">
-                      <div className="review-item-left">
-                        <i className="fa-solid fa-user-tie" style={{ color: 'var(--text-muted)', width: 14 }} />
-                        <span className="review-item-name">Add Waitstaff (₹{STAFF_RATE}/person)</span>
-                      </div>
-                      <div className="qty-control">
-                        <button className="qty-btn" type="button" onClick={() => setStaffCount(s => Math.max(0, s - 1))}>−</button>
-                        <span className="qty-val">{staffCount} staff</span>
-                        <button className="qty-btn" type="button" onClick={() => setStaffCount(s => s + 1)}>+</button>
-                      </div>
-                    </div>
-                  )}
-                  {servicePref === 'NinjaBuffet' && (
-                    <div className="review-item-row">
-                      <div className="review-item-left">
-                        <i className="fa-solid fa-user-tie" style={{ color: 'var(--text-muted)', width: 14 }} />
-                        <span className="review-item-name">Serving Staff Included</span>
-                      </div>
-                      <span style={{ fontWeight: 700, color: 'var(--text-dark)', fontSize: '0.9rem', flexShrink: 0 }}>
-                        {pricing.finalStaffCount} staff
-                      </span>
-                    </div>
-                  )}
                 </div>
-              </div>
+              )}
 
-              {/* Coupon section */}
-              <div className="summary-card">
-                <div className="summary-card-header">
-                  <i className="fa-solid fa-tag" style={{ color: 'var(--red)' }} /> Coupon Code
-                </div>
-                <div className="summary-card-body">
-                  <div className="coupon-row">
-                    <input
-                      className="form-input"
-                      placeholder="Enter coupon code"
-                      value={couponCode}
-                      onChange={e => setCouponCode(e.target.value.toUpperCase())}
-                      onKeyDown={e => e.key === 'Enter' && applyCoupon()}
-                      style={{ letterSpacing: '0.05em', textTransform: 'uppercase' }}
-                    />
-                    <button
-                      type="button"
-                      onClick={applyCoupon}
-                      disabled={couponLoading || !couponCode.trim()}
-                      style={{
-                        padding: '11px 18px', borderRadius: 'var(--radius)',
-                        background: 'var(--red)', color: '#fff',
-                        fontWeight: 700, fontSize: '0.87rem', border: 'none', cursor: 'pointer',
-                        whiteSpace: 'nowrap', opacity: couponLoading ? 0.7 : 1,
-                      }}
-                    >
-                      {couponLoading ? <i className="fa-solid fa-circle-notch spin" /> : 'Apply'}
-                    </button>
-                  </div>
-                  {coupon && (
-                    <p style={{ marginTop: 8, fontSize: '0.83rem', color: '#28a745', fontWeight: 600 }}>
-                      <i className="fa-solid fa-circle-check" style={{ marginRight: 4 }} />
-                      {coupon.message || `Coupon applied: ${coupon.discountPercent ? `${coupon.discountPercent}% off` : `₹${coupon.discountFlat} off`}`}
-                    </p>
-                  )}
-                </div>
+              {/* Coupon */}
+              <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+                <input
+                  placeholder="Coupon code"
+                  value={couponCode}
+                  onChange={e => setCouponCode(e.target.value.toUpperCase())}
+                  onKeyDown={e => e.key === 'Enter' && applyCoupon()}
+                  style={{ flex: 1, padding: '10px 14px', borderRadius: 10, border: '1px solid var(--separator-nm)', background: 'var(--bg)', fontSize: 14, color: 'var(--heading)', fontFamily: 'inherit', outline: 'none', letterSpacing: '0.05em' }}
+                />
+                <button onClick={applyCoupon} disabled={couponLoading || !couponCode.trim()} style={{
+                  padding: '10px 16px', borderRadius: 10, background: 'var(--primary)', border: 'none',
+                  color: '#fff', fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0,
+                }}>
+                  {couponLoading ? '...' : 'Apply'}
+                </button>
               </div>
+              {coupon && (
+                <p style={{ fontSize: 12, color: '#34C759', fontWeight: 600, marginBottom: 12 }}>
+                  <i className="fa-solid fa-circle-check" style={{ marginRight: 4 }} />
+                  {coupon.message || `Coupon applied`}
+                </p>
+              )}
             </div>
 
-            {/* ── RIGHT: Sticky sidebar ── */}
-            <div>
-
-              {/* Event summary */}
-              <div className="summary-card" style={{ marginBottom: 24 }}>
-                <div className="summary-card-header">
-                  <i className="fa-solid fa-calendar-check" style={{ color: 'var(--red)' }} /> Event Summary
+            {/* RIGHT: Price summary + confirm */}
+            <div style={{ position: 'sticky', top: 0 }}>
+              <div style={{ background: 'var(--bg)', borderRadius: 12, overflow: 'hidden', border: '0.5px solid var(--separator-nm)' }}>
+                <div style={{ padding: '12px 16px', borderBottom: '0.5px solid var(--separator-nm)', fontWeight: 600, fontSize: 13, color: 'var(--heading)' }}>
+                  Price Breakdown
                 </div>
-                <div className="summary-card-body">
+                <div style={{ padding: '8px 16px' }}>
                   {[
-                    ['Occasion', occasion || '—'],
-                    ['Date', eventDate || '—'],
-                    ['Time', timeSlot || '—'],
-                    ['Guests', `${guestCount} (${vegCount}V + ${nonVegCount}NV)`],
-                    ['Service', servicePref],
-                  ].map(([lbl, val]) => (
-                    <div key={lbl} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '6px 0', borderBottom: '1px solid var(--border-light)', fontSize: '0.85rem', gap: 8 }}>
-                      <span style={{ color: 'var(--text-muted)', flexShrink: 0 }}>{lbl}</span>
-                      <span style={{ fontWeight: 600, color: 'var(--text-dark)', textAlign: 'right' }}>{val}</span>
+                    [`Food (₹${pricing.pricePerPerson}/pp × ${guestCount})`, pricing.basePrice],
+                    pricing.packingCost > 0 ? ['Packing', pricing.packingCost] : null,
+                    pricing.addonCost > 0 ? ['Extra items', pricing.addonCost] : null,
+                    [`${servicePref === 'Catering' ? 'Setup & service (+ transport extra)' : 'Delivery'}`, pricing.deliveryCharge],
+                    pricing.staffCharge > 0 ? [`Staff (${pricing.finalStaffCount} × ₹${STAFF_RATE})`, pricing.staffCharge] : null,
+                  ].filter(Boolean).map(([lbl, val]) => (
+                    <div key={lbl} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', fontSize: 13, borderBottom: '0.5px solid var(--separator-nm)' }}>
+                      <span style={{ color: 'var(--muted)' }}>{lbl}</span>
+                      <span style={{ fontWeight: 500, color: 'var(--heading)' }}>₹{val.toLocaleString('en-IN')}</span>
                     </div>
                   ))}
-                </div>
-              </div>
-
-              {/* Price breakdown */}
-              <div className="summary-card">
-                <div className="summary-card-header">
-                  <i className="fa-solid fa-receipt" style={{ color: 'var(--red)' }} /> Price Breakdown
-                </div>
-                <div className="summary-card-body">
-                  <div className="price-row">
-                    <span className="label">Food (₹{pricing.pricePerPerson}/person × {guestCount})</span>
-                    <span className="value">₹{pricing.basePrice.toLocaleString('en-IN')}</span>
-                  </div>
-                  {pricing.packingCost > 0 && (
-                    <div className="price-row">
-                      <span className="label">Packing charges</span>
-                      <span className="value">₹{pricing.packingCost.toLocaleString('en-IN')}</span>
-                    </div>
-                  )}
-                  {pricing.addonCost > 0 && (
-                    <div className="price-row">
-                      <span className="label">Extra items</span>
-                      <span className="value">₹{pricing.addonCost.toLocaleString('en-IN')}</span>
-                    </div>
-                  )}
-                  {pricing.deliveryCharge > 0 && (
-                    <div className="price-row">
-                      <span className="label">{servicePref === 'NinjaBuffet' ? 'Setup & Transport' : 'Doorstep Delivery'}</span>
-                      <span className="value">₹{pricing.deliveryCharge.toLocaleString('en-IN')}</span>
-                    </div>
-                  )}
-                  {pricing.staffCharge > 0 && (
-                    <div className="price-row">
-                      <span className="label">Waitstaff ({pricing.finalStaffCount} × ₹{STAFF_RATE})</span>
-                      <span className="value">₹{pricing.staffCharge.toLocaleString('en-IN')}</span>
-                    </div>
-                  )}
                   {pricing.discount > 0 && (
-                    <div className="price-row">
-                      <span className="label" style={{ color: '#28a745' }}>
-                        <i className="fa-solid fa-tag" style={{ marginRight: 4 }} />Coupon discount
-                      </span>
-                      <span className="value" style={{ color: '#28a745' }}>
-                        −₹{pricing.discount.toLocaleString('en-IN')}
-                      </span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', fontSize: 13, borderBottom: '0.5px solid var(--separator-nm)' }}>
+                      <span style={{ color: '#34C759' }}>Coupon discount</span>
+                      <span style={{ fontWeight: 600, color: '#34C759' }}>−₹{pricing.discount.toLocaleString('en-IN')}</span>
                     </div>
                   )}
-                  <hr className="price-divider" />
-                  <div className="price-row">
-                    <span className="label">GST (5%)</span>
-                    <span className="value">₹{pricing.gst.toLocaleString('en-IN')}</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', fontSize: 13 }}>
+                    <span style={{ color: 'var(--muted)' }}>GST (5%)</span>
+                    <span style={{ fontWeight: 500, color: 'var(--heading)' }}>₹{pricing.gst.toLocaleString('en-IN')}</span>
                   </div>
                 </div>
-
-                {/* Total row */}
-                <div className="price-row total-row">
-                  <span className="label">Grand Total</span>
-                  <span className="value">₹{pricing.total.toLocaleString('en-IN')}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', background: 'var(--primary-bg)', borderTop: '0.5px solid var(--separator-nm)' }}>
+                  <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--heading)' }}>Total</span>
+                  <span style={{ fontWeight: 800, fontSize: 22, color: 'var(--primary)', letterSpacing: '-0.02em' }}>₹{pricing.total.toLocaleString('en-IN')}</span>
                 </div>
-
-                <div style={{ padding: '14px 16px 16px' }}>
-                  <button
-                    type="button"
-                    className="btn-primary"
-                    onClick={handleContinue}
-                    style={{
-                      width: '100%', padding: '16px', fontSize: '1.05rem', borderRadius: '50px',
-                      display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px',
-                      background: '#E67E22', border: 'none', color: '#fff', fontWeight: 800,
-                      boxShadow: '0 8px 16px rgba(230, 126, 34, 0.25)', cursor: 'pointer',
-                      transition: 'background 0.2s'
-                    }}
-                    onMouseOver={(e) => e.currentTarget.style.background = '#d35400'}
-                    onMouseOut={(e) => e.currentTarget.style.background = '#E67E22'}
-                  >
-                    Proceed to Payment <i className="fa-solid fa-arrow-right" />
+                <div style={{ padding: 14 }}>
+                  <button onClick={handleContinue} style={{
+                    width: '100%', padding: '14px', borderRadius: 999,
+                    background: 'var(--primary)', border: 'none',
+                    color: '#fff', fontWeight: 700, fontSize: 15,
+                    cursor: 'pointer', fontFamily: 'inherit',
+                    boxShadow: 'var(--shadow-green)', letterSpacing: '-0.01em',
+                  }}>
+                    Proceed to Payment →
                   </button>
-                  <p style={{ textAlign: 'center', fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: 16 }}>
-                    <i className="fa-solid fa-shield-check" style={{ marginRight: 4, color: '#28a745' }} />
-                    Secure booking · Our team contacts you within 2 hours
+                  <p style={{ textAlign: 'center', fontSize: 11, color: 'var(--muted)', marginTop: 10 }}>
+                    <i className="fa-solid fa-shield-check" style={{ marginRight: 4, color: '#34C759' }} />
+                    Our team contacts you within 2 hours
                   </p>
                 </div>
               </div>
-
             </div>
           </div>
         </div>
+
+        <div style={{ height: 20, flexShrink: 0 }} />
       </div>
-    </div>
+      <style>{`
+        @media (max-width: 700px) { .modal-cols { grid-template-columns: 1fr !important; } }
+        @keyframes modalPop { from { opacity: 0; transform: scale(0.94) translateY(16px); } to { opacity: 1; transform: none; } }
+      `}</style>
+    </div>,
+    document.body
   )
 }

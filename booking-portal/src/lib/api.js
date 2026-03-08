@@ -23,7 +23,7 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('padma-auth')
-      window.location.href = '/login'
+      window.location.href = '/booking/login'
     }
     return Promise.reject(error)
   }
