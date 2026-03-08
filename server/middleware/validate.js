@@ -20,6 +20,7 @@ function validate(schemaName) {
 
     if (error) {
       const messages = error.details.map(d => d.message)
+      console.error('[Validation]', schemaName, messages)
       return res.status(400).json({
         error: 'Validation failed',
         details: messages,

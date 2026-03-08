@@ -1,65 +1,107 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link, useLocation } from 'react-router-dom'
+import HeroSlider      from '../components/HeroSlider'
+import Services        from '../components/Services'
+import CuisineShowcase from '../components/CuisineShowcase'
+import Stats           from '../components/Stats'
+import About           from '../components/About'
+import BrandShowcase   from '../components/BrandShowcase'
+import Testimonials    from '../components/Testimonials'
+import CTABanner       from '../components/CTABanner'
+import Footer          from '../components/Footer'
+
+const NAV_LINKS = [
+  { label: 'Home',      to: '/' },
+  { label: 'About',     to: '/about' },
+  { label: 'My Orders', to: '/my-orders' },
+  { label: 'Contact',   to: '/contact' },
+]
+
+function HomeNav({ onBookNow }) {
+  const [scrolled, setScrolled] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const { pathname } = useLocation()
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 50)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  return (
+    <nav style={{
+      position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000,
+      background: 'rgba(255,255,255,0.97)',
+      borderBottom: '1px solid var(--border-light)',
+      boxShadow: scrolled ? 'var(--shadow)' : 'none',
+      backdropFilter: 'blur(12px)',
+      transition: 'box-shadow 0.3s',
+    }}>
+      <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 68 }}>
+        <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
+          <img src="/booking/img/amrutham-logo.png" alt="Amrutham" style={{ height: 51, objectFit: 'contain' }} />
+        </Link>
+
+        <div className="homenav-links" style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          {NAV_LINKS.map(l => (
+            <Link key={l.to} to={l.to} style={{
+              padding: '8px 14px', borderRadius: 'var(--r-sm)',
+              fontWeight: 500, fontSize: '0.9rem',
+              color: pathname === l.to ? 'var(--primary-dark)' : 'var(--heading)',
+              background: pathname === l.to ? 'var(--primary-bg)' : 'transparent',
+              textDecoration: 'none',
+            }}>{l.label}</Link>
+          ))}
+        </div>
+
+        <div className="homenav-cta" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <a href="tel:+918686622722" style={{ fontWeight: 500, fontSize: '0.84rem', color: 'var(--muted)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <i className="fa-solid fa-phone" style={{ color: 'var(--primary-dark)', fontSize: '0.78rem' }} />
+            +91 86866 22722
+          </a>
+          <button onClick={onBookNow} className="site-btn site-btn-primary site-btn-sm">Book Now</button>
+        </div>
+
+        <button onClick={() => setMobileOpen(v => !v)} className="homenav-burger" aria-label="Menu">
+          <span style={{ transform: mobileOpen ? 'rotate(45deg) translate(5px,5px)' : 'none' }} />
+          <span style={{ opacity: mobileOpen ? 0 : 1 }} />
+          <span style={{ transform: mobileOpen ? 'rotate(-45deg) translate(5px,-5px)' : 'none' }} />
+        </button>
+      </div>
+
+      {mobileOpen && (
+        <div style={{ borderTop: '1px solid var(--border-light)', background: 'var(--bg)', padding: '12px 20px 20px' }}>
+          {NAV_LINKS.map(l => (
+            <Link key={l.to} to={l.to} onClick={() => setMobileOpen(false)} style={{ display: 'block', padding: '12px 4px', borderBottom: '1px solid var(--border-light)', fontWeight: 500, fontSize: '1rem', color: 'var(--heading)', textDecoration: 'none' }}>{l.label}</Link>
+          ))}
+          <button onClick={() => { onBookNow(); setMobileOpen(false) }} className="site-btn site-btn-primary" style={{ width: '100%', marginTop: 16, justifyContent: 'center' }}>Book Now</button>
+        </div>
+      )}
+
+      <style>{`
+        .homenav-burger { display:none; flex-direction:column; gap:5px; background:none; border:none; cursor:pointer; padding:8px; }
+        .homenav-burger span { width:22px; height:2px; background:var(--heading); border-radius:2px; display:block; transition:all 0.3s; }
+        @media(max-width:900px){ .homenav-links,.homenav-cta{display:none!important} .homenav-burger{display:flex!important} }
+      `}</style>
+    </nav>
+  )
+}
 
 export default function LandingPage() {
   const navigate = useNavigate()
-  const [splash, setSplash] = useState(true)
-
-  useEffect(() => {
-    const t = setTimeout(() => setSplash(false), 1800)
-    return () => clearTimeout(t)
-  }, [])
-
-  if (splash) {
-    return (
-      <div style={{ minHeight: '100vh', background: 'var(--primary)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ position: 'relative', marginBottom: 24 }}>
-          <div style={{ width: 100, height: 100, borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <i className="fa-solid fa-bowl-rice" style={{ fontSize: '3rem', color: 'white' }} />
-          </div>
-        </div>
-        <h1 style={{ fontWeight: 800, fontSize: '1.8rem', color: 'white', letterSpacing: '-0.02em' }}>Amrutham</h1>
-        <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', marginTop: 4 }}>by Padma Catering</p>
-      </div>
-    )
-  }
+  const bookNow = () => navigate('/setup')
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
-      {/* Hero image area */}
-      <div style={{ flex: 1, position: 'relative', overflow: 'hidden', minHeight: '55vh' }}>
-        <img
-          src="https://images.unsplash.com/photo-1555244162-803834f87a4d?w=600&h=800&fit=crop&q=80"
-          alt="Catering"
-          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-        />
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.6) 100%)' }} />
-        <div style={{ position: 'absolute', top: 20, left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 6 }}>
-            <i className="fa-solid fa-bowl-rice" style={{ fontSize: '1.4rem', color: 'var(--heading)' }} />
-          </div>
-        </div>
-      </div>
-
-      {/* Bottom sheet */}
-      <div style={{ background: 'white', borderRadius: '28px 28px 0 0', padding: '32px 24px 40px', marginTop: -28, position: 'relative' }}>
-        <div style={{ width: 40, height: 4, background: 'var(--border)', borderRadius: 2, margin: '0 auto 28px' }} />
-        <h1 style={{ fontWeight: 800, fontSize: '1.8rem', color: 'var(--heading)', marginBottom: 12, lineHeight: 1.2 }}>
-          The Fastest<br />In Catering <span style={{ color: 'var(--primary-dark)' }}>Food</span>
-        </h1>
-        <p style={{ color: 'var(--muted)', fontSize: '0.95rem', lineHeight: 1.65, marginBottom: 32 }}>
-          Our job is to fill your occasion with delicious food — Meal Trays, Bulk Delivery or Full Catering, all from Visakhapatnam's most trusted caterer.
-        </p>
-        <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
-          {[0,1,2].map(i => <div key={i} style={{ width: i === 0 ? 24 : 8, height: 8, borderRadius: 4, background: i === 0 ? 'var(--primary)' : 'var(--border)' }} />)}
-        </div>
-        <button className="btn-green" onClick={() => navigate('/setup')}>
-          Get Started <i className="fa-solid fa-arrow-right" />
-        </button>
-        <button className="btn-outline-green" style={{ marginTop: 12 }} onClick={() => navigate('/login')}>
-          Sign In to Your Account
-        </button>
-      </div>
-    </div>
+    <>
+      <HeroSlider onBookNow={bookNow} />
+      <Services />
+      <CuisineShowcase onBookNow={bookNow} />
+      <Stats />
+      <About />
+      <BrandShowcase onBookNow={bookNow} />
+      <Testimonials />
+      <CTABanner onBookNow={bookNow} />
+      <Footer />
+    </>
   )
 }
