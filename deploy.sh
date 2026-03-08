@@ -49,6 +49,8 @@ echo "==> Building main site..."
 
 echo "==> Building booking portal..."
 (cd booking-portal && npm install && npm run build)
+cp -r booking-portal/dist/. /var/www/booking/
+echo "    Copied booking portal to /var/www/booking"
 
 echo "==> Installing server dependencies..."
 (cd server && npm install)
