@@ -187,7 +187,7 @@ function AppShell() {
 
 export default function App() {
   return (
-    <BrowserRouter basename="/booking">
+    <BrowserRouter basename="/">
       <Toaster
         position="top-right"
         toastOptions={{
