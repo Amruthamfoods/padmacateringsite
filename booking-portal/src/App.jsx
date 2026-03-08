@@ -59,7 +59,7 @@ function WebNav() {
       <div className="web-nav-inner">
       {/* Brand */}
       <NavLink to="/" className="web-nav-brand">
-        <img src="/booking/img/amrutham-logo.png" alt="Amrutham" style={{ height: 46, objectFit: 'contain' }} />
+        <img src="/img/amrutham-logo.png" alt="Amrutham" style={{ height: 46, objectFit: 'contain' }} />
       </NavLink>
 
       {/* Navigation links */}

@@ -175,7 +175,7 @@ export default function ServicePreferenceModal({ onClose }) {
           padding: '14px 20px', background: 'var(--bg)',
           borderBottom: '0.5px solid var(--separator-nm)', gap: 12,
         }}>
-          <img src="/booking/img/amrutham-logo.png" alt="Amrutham" style={{ height: 36, objectFit: 'contain' }} />
+          <img src="/img/amrutham-logo.png" alt="Amrutham" style={{ height: 36, objectFit: 'contain' }} />
           <div style={{ flex: 1 }}>
             <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--heading)', lineHeight: 1.2 }}>Review &amp; Confirm</div>
             <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 1 }}>{pkg.name} · {guestCount} guests · {eventDate}</div>

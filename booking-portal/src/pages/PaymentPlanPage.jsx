@@ -109,7 +109,7 @@ export default function PaymentPlanPage() {
         currency: orderData.currency,
         name: 'Amrutham by Padma Catering',
         description: `Booking #${bookingId}`,
-        image: '/booking/img/amrutham-logo.png',
+        image: '/img/amrutham-logo.png',
         order_id: orderData.orderId,
         prefill: {
           name: contact.name,

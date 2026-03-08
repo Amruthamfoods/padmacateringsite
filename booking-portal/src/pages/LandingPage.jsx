@@ -39,7 +39,7 @@ function HomeNav({ onBookNow }) {
     }}>
       <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 68 }}>
         <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-          <img src="/booking/img/amrutham-logo.png" alt="Amrutham" style={{ height: 51, objectFit: 'contain' }} />
+          <img src="/img/amrutham-logo.png" alt="Amrutham" style={{ height: 51, objectFit: 'contain' }} />
         </Link>
 
         <div className="homenav-links" style={{ display: 'flex', alignItems: 'center', gap: 2 }}>

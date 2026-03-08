@@ -28,10 +28,10 @@ const values = [
 ]
 
 const team = [
-  { name: 'Padma Cherukuri',     role: 'Founder & Head Chef',                    img: '/booking/img/team/padma.png', bio: 'The heart and soul of Padma Catering. With 30+ years of culinary mastery, Padma built this brand on one simple belief — food should make people feel at home.' },
-  { name: 'Dasaradh Cherukuri',  role: 'General Manager & Head of Operations',   img: '/booking/img/team/dasaradh.png', bio: 'Dasaradh ensures every event runs like clockwork — overseeing logistics, staffing, vendor coordination and flawless on-ground execution.' },
-  { name: 'Rohit Cherukuri',     role: 'Client Relations Lead & Marketing Head', img: '/booking/img/team/rohit.jpg', bio: 'Rohit is your first point of contact — dedicated to understanding your vision and translating it into the perfect catering experience.' },
-  { name: 'Nalluri Shravani',    role: 'Concept Designer & Creative Incharge',   img: '/booking/img/team/shravani.jpg', bio: 'Shravani brings creativity and elegance to every setup — crafting visual concepts, themes and presentation that make each event truly memorable.' },
+  { name: 'Padma Cherukuri',     role: 'Founder & Head Chef',                    img: '/img/team/padma.png', bio: 'The heart and soul of Padma Catering. With 30+ years of culinary mastery, Padma built this brand on one simple belief — food should make people feel at home.' },
+  { name: 'Dasaradh Cherukuri',  role: 'General Manager & Head of Operations',   img: '/img/team/dasaradh.png', bio: 'Dasaradh ensures every event runs like clockwork — overseeing logistics, staffing, vendor coordination and flawless on-ground execution.' },
+  { name: 'Rohit Cherukuri',     role: 'Client Relations Lead & Marketing Head', img: '/img/team/rohit.jpg', bio: 'Rohit is your first point of contact — dedicated to understanding your vision and translating it into the perfect catering experience.' },
+  { name: 'Nalluri Shravani',    role: 'Concept Designer & Creative Incharge',   img: '/img/team/shravani.jpg', bio: 'Shravani brings creativity and elegance to every setup — crafting visual concepts, themes and presentation that make each event truly memorable.' },
 ]
 
 const HL = [

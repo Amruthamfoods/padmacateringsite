@@ -2,9 +2,9 @@ import { } from 'react'
 import { Link } from 'react-router-dom'
 
 const FOOD_IMAGES = [
-  '/booking/img/delivery-box.png', // Delivery Box (center)
-  '/booking/img/meal-tray.jpg',    // Meal Tray (top-right)
-  '/booking/img/catering.jpeg',    // Catering (bottom-left)
+  '/img/delivery-box.png', // Delivery Box (center)
+  '/img/meal-tray.jpg',    // Meal Tray (top-right)
+  '/img/catering.jpeg',    // Catering (bottom-left)
 ]
 
 export default function HeroSlider({ onBookNow }) {

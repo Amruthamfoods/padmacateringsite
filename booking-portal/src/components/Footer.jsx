@@ -6,7 +6,7 @@ export default function Footer() {
         <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 1fr 1fr 1.3fr', gap: 40 }} className="footer-cols">
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-              <img src="/booking/img/amrutham-logo.png" alt="Amrutham" style={{ height: 51, objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
+              <img src="/img/amrutham-logo.png" alt="Amrutham" style={{ height: 51, objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
             </div>
             <p style={{ fontSize: '0.88rem', lineHeight: 1.75, maxWidth: 280, marginBottom: 20 }}>Visakhapatnam's most trusted catering service since 1993. Serving 1 Crore+ plates with love, freshness and craftsmanship.</p>
             <div style={{ display: 'flex', gap: 10 }}>
