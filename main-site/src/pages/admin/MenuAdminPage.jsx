@@ -261,7 +261,7 @@ function PackageModal({ pkg, onSave, onClose }) {
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal-box" style={{ maxWidth: 560 }}>
         <div className="modal-header">
-          <h3 className="modal-title">{pkg ? 'Edit Package' : 'Create Package'}</h3>
+          <h3 className="modal-title">Package Image — {pkg.name}</h3>
           <button className="modal-close" onClick={onClose}><i className="fa-solid fa-xmark" /></button>
         </div>
 
@@ -1290,7 +1290,7 @@ export default function MenuAdminPage() {
     Promise.all([
       api.get('/admin/menu/items'),
       api.get('/admin/menu/packages'),
-      api.get('/admin/menu/categories'),
+      api.get('/menu/categories'),
     ]).then(([i, p, c]) => {
       setItems(i.data)
       setPackages(p.data)

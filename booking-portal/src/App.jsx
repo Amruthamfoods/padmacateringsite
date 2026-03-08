@@ -185,9 +185,67 @@ function AppShell() {
   )
 }
 
-export default function App() {
+function WebNav() {
+  const { pathname } = useLocation()
+  const isLanding = pathname === '/'
+  if (isLanding) return null
+
+  const user = (() => { try { return JSON.parse(localStorage.getItem('padma_user') || '{}') } catch { return {} } })()
+
   return (
-    <BrowserRouter basename="/booking">
+    <nav className="web-nav">
+      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 24px', display: 'flex', alignItems: 'center', width: '100%', gap: 0, flex: 1 }}>
+
+        {/* Logo → back to main site */}
+        <a href="https://padmacatering.com" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0, marginRight: 'auto' }}>
+          <img src="/amrutham-logo.png?v=2" alt="Amrutham by Padma Catering" style={{ height: 44, objectFit: 'contain', borderRadius: 10 }} />
+        </a>
+
+        {/* Nav links — desktop only, main site pages */}
+        <div className="web-nav-links">
+          <a href="https://padmacatering.com"          className="web-nav-link">Home</a>
+          <a href="https://padmacatering.com/about"    className="web-nav-link">About</a>
+          <a href="https://padmacatering.com/contact"  className="web-nav-link">Contact Us</a>
+          <NavLink to="/setup" className={({ isActive }) => 'web-nav-link' + (isActive ? ' active' : '')}>Book Now ↗</NavLink>
+        </div>
+
+        {/* Right: auth */}
+        <div className="web-nav-actions">
+          {user.name ? (
+            <NavLink to="/my-orders"
+              style={{
+                display: 'flex', alignItems: 'center', gap: 7,
+                padding: '8px 16px', borderRadius: 'var(--r-pill)',
+                background: 'var(--fill-tertiary)', textDecoration: 'none',
+                fontSize: 14, fontWeight: 600, color: 'var(--heading)',
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+              </svg>
+              {user.name.split(' ')[0]}
+            </NavLink>
+          ) : (
+            <NavLink to="/login"
+              style={{
+                padding: '8px 16px', borderRadius: 'var(--r-pill)',
+                background: 'var(--fill-tertiary)', color: 'var(--heading)', textDecoration: 'none',
+                fontSize: 14, fontWeight: 500, transition: 'background 0.15s',
+              }}
+            >
+              Login
+            </NavLink>
+          )}
+        </div>
+
+      </div>
+    </nav>
+  )
+}
+
+function AppShell() {
+  return (
+    <div className="portal-desktop-bg">
       <Toaster
         position="top-right"
         toastOptions={{

@@ -109,6 +109,9 @@ app.post('/api/delivery/calculate', async (req, res) => {
 
 
 
+/* ─── Serve uploaded package images ─── */
+app.use('/api/uploads', express.static(path.join(__dirname, 'uploads')))
+
 /* ─── Serve booking portal static files at /booking ─── */
 const bookingDist = path.join(__dirname, '../booking-portal/dist')
 app.use('/booking', express.static(bookingDist))

@@ -239,6 +239,9 @@ export default function EventSetupPage() {
                     <span style={{ fontSize: 15, fontWeight: isSel || isToday ? 700 : 400, color: isSel ? '#fff' : isToday ? 'var(--primary)' : 'var(--heading)' }}>
                       {d.getDate()}
                     </span>
+
+                    {/* Veg/NonVeg dot */}
+                    <span style={{ position: 'absolute', top: 10, right: 10, width: 9, height: 9, borderRadius: '50%', background: pkg.type === 'VEG' ? '#34C759' : '#FF3B30', border: '1.5px solid #fff', boxShadow: '0 1px 4px rgba(0,0,0,0.2)' }} />
                   </div>
                 </button>
               )
