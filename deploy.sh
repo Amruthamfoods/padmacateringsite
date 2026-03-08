@@ -42,13 +42,13 @@ echo "==> Pulling latest code..."
 git pull origin master
 
 echo "==> Building main site..."
-cd main-site && npm install && npm run build && cd ..
+(cd main-site && npm install && npm run build)
 
 echo "==> Building booking portal..."
-cd booking-portal && npm install && npm run build && cd ..
+(cd booking-portal && npm install && npm run build)
 
 echo "==> Installing server dependencies..."
-cd server && npm install && cd ..
+(cd server && npm install)
 
 echo "==> Restarting server..."
 pm2 restart padma-server || pm2 start server/index.js --name padma-server
