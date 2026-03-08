@@ -23,7 +23,7 @@ export default function HeroSlider({ onBookNow }) {
             <p style={{ fontSize: '1.05rem', color: 'var(--muted)', lineHeight: 1.7, marginBottom: 36, maxWidth: 440 }}>
               Best catering service in Visakhapatnam. We are ready to serve your desire with 1 Crore+ plates of experience and a team that truly cares.
             </p>
-            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'nowrap', alignItems: 'center' }}>
               <button onClick={onBookNow} className="site-btn site-btn-primary">
                 <i className="fa-solid fa-calendar-check" /> Book Your Event
               </button>

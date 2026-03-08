@@ -279,7 +279,7 @@ button { font-family: var(--font); }
 }
 .web-nav-link:hover  { background: var(--fill-tertiary); }
 .web-nav-link.active { color: var(--primary); font-weight: 600; background: var(--primary-bg); }
-.web-nav-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.web-nav-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; margin-left: auto; }
 
 /* ─── Page layout containers ─── */
 .page-outer { background: var(--bg-page); min-height: calc(100vh - 64px); }
@@ -300,6 +300,7 @@ button { font-family: var(--font); }
   .web-nav-inner     { padding: 0 16px; }
   .web-nav-links     { display: none; }
   .desktop-only      { display: none !important; }
+  .mobile-only       { display: flex !important; }
   .page-inner        { padding: 16px; }
 }
 
