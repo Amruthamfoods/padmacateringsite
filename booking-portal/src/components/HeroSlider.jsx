@@ -61,7 +61,7 @@ export default function HeroSlider({ onBookNow }) {
           </div>
         </div>
       </div>
-      <style>{`@media (max-width:900px){.hero-grid{grid-template-columns:1fr!important;gap:40px!important;text-align:center}.hero-grid>div:last-child{display:none}}`}</style>
+      <style>{`@media (max-width:900px){.hero-grid{grid-template-columns:1fr!important;gap:40px!important;text-align:left;padding-left:4px}.hero-grid>div:last-child{display:none}}`}</style>
     </section>
   )
 }
