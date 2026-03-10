@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation, NavLink, useNaviga
 import { useState, useRef, useEffect } from 'react'
 import { Toaster } from 'react-hot-toast'
 import useAuthStore from './store/authStore'
+import { useCartStore } from './store/useCartStore'
 
 import LandingPage from './pages/LandingPage'
 import EventSetupPage from './pages/EventSetupPage'
@@ -14,6 +15,7 @@ import AboutPage from './pages/AboutPage'
 import ContactPage from './pages/ContactPage'
 import ProfilePage from './pages/ProfilePage'
 import RewardsPage from './pages/RewardsPage'
+import CartPage from './pages/CartPage'
 
 import AdminLayout from './pages/admin/AdminLayout'
 import DashboardPage from './pages/admin/DashboardPage'
@@ -30,6 +32,7 @@ import PricingAdminPage from './pages/admin/PricingAdminPage'
 function WebNav() {
   const navigate = useNavigate()
   const { user, logout: storeLogout } = useAuthStore()
+  const cartCount = useCartStore(s => s.items.length)
   const [open, setOpen] = useState(false)
   const [mobileMenu, setMobileMenu] = useState(false)
   const dropRef = useRef(null)
@@ -73,6 +76,17 @@ function WebNav() {
           {/* Brand */}
           <NavLink to="/" className="web-nav-brand">
             <img src="/img/amrutham-logo.png" alt="Amrutham" style={{ height: 46, objectFit: 'contain' }} />
+          </NavLink>
+
+          {/* Cart icon — always visible */}
+          <NavLink to="/cart" style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: '50%', background: 'var(--fill-tertiary)', textDecoration: 'none', color: 'var(--heading)', flexShrink: 0 }}
+            title="Compare cart">
+            <i className="fa-solid fa-cart-shopping" style={{ fontSize: 15 }} />
+            {cartCount > 0 && (
+              <span style={{ position: 'absolute', top: -4, right: -4, width: 18, height: 18, borderRadius: '50%', background: 'var(--primary)', color: '#fff', fontSize: 10, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #fff' }}>
+                {cartCount}
+              </span>
+            )}
           </NavLink>
 
           {/* Desktop navigation links */}
@@ -240,6 +254,7 @@ function AppShell() {
           <Route path="/contact"   element={<ContactPage />} />
           <Route path="/profile"   element={<ProfilePage />} />
           <Route path="/rewards"   element={<RewardsPage />} />
+          <Route path="/cart"     element={<CartPage />} />
         </Routes>
       </main>
     </div>

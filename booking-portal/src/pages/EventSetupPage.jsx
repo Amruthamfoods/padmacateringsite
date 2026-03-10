@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import api from '../lib/api'
 import { useBookingStore } from '../store/useBookingStore'
+import { useCartStore } from '../store/useCartStore'
 
 const CATEGORIES = [
   { key: 'ALL', label: 'All', icon: '🍽️' },
@@ -66,6 +67,7 @@ const TODAY = toDateStr(new Date())
 export default function EventSetupPage() {
   const navigate = useNavigate()
   const { eventDetails, setEventDetails, setMenuPreferences } = useBookingStore()
+  const { addToCart, isInCart } = useCartStore()
 
   const [packages, setPackages] = useState([])
   const [loading, setLoading] = useState(true)
@@ -425,10 +427,25 @@ export default function EventSetupPage() {
                           <span style={{ fontWeight: 700, fontSize: 16, color: accentColor, letterSpacing: -0.2 }}>
                             {tier ? `₹${tier.pricePerPerson}` : '—'}<span style={{ fontSize: 11, fontWeight: 500, color: 'var(--muted)', marginLeft: 1 }}>/pp</span>
                           </span>
-                          <span style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
-                            {pkg.servesMin}+
-                          </span>
+                          <button
+                            onClick={e => {
+                              e.stopPropagation()
+                              if (isInCart(pkg.id)) { toast('Already in cart'); return }
+                              const added = addToCart(pkg, eventDetails, tier?.pricePerPerson || 0)
+                              if (added) toast.success(`${pkg.name} added to cart`)
+                            }}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: 5,
+                              padding: '5px 10px', borderRadius: 'var(--r-pill)',
+                              background: isInCart(pkg.id) ? 'var(--primary-bg)' : 'var(--primary)',
+                              color: isInCart(pkg.id) ? 'var(--primary-dark)' : '#fff',
+                              border: 'none', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                              transition: 'all 0.15s',
+                            }}
+                          >
+                            <i className={`fa-solid ${isInCart(pkg.id) ? 'fa-check' : 'fa-cart-plus'}`} style={{ fontSize: 11 }} />
+                            {isInCart(pkg.id) ? 'In Cart' : 'Add'}
+                          </button>
                         </div>
                       </div>
                     </div>
