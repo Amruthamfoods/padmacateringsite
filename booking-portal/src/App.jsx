@@ -40,7 +40,7 @@ function AnnouncementBar() {
   const cartTotal = useCartStore(s => s.items.reduce((sum, i) => sum + (i.pricePerPerson || 0) * (i.eventDetails?.guestCount || i.pkg?.servesMin || 50), 0))
 
   useEffect(() => {
-    api.get('/coupon/active').then(r => setCoupons(r.data || [])).catch(() => { })
+    api.get('/coupon/active').then(r => setCoupons(Array.isArray(r.data) ? r.data : [])).catch(() => { })
   }, [])
 
   useEffect(() => {
