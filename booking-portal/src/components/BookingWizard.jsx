@@ -380,53 +380,57 @@ export default function BookingWizard({ onClose }) {
                                 </div>
                             )}
 
-                            {/* ── STEP 3: Package Type — orange selected state ── */}
+                            {/* ── STEP 3: Package Type ── */}
                             {step === 3 && (
                                 <div>
                                     <p style={{ fontSize: 11, fontWeight: 700, color: P, textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 6px' }}>Step 4</p>
                                     <h2 style={{ fontSize: 26, fontWeight: 700, color: 'var(--heading)', margin: '0 0 6px', letterSpacing: '-0.03em' }}>What type of service?</h2>
                                     <p style={{ color: 'var(--muted)', fontSize: 14.5, margin: '0 0 20px' }}>Choose how you'd like to serve your guests.</p>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+
+                                    {/* 3-button segmented control */}
+                                    <div style={{
+                                        display: 'flex', gap: 8,
+                                        background: 'var(--fill-tertiary)', borderRadius: 14,
+                                        padding: 5,
+                                    }}>
                                         {PACKAGE_TYPES.map(pt => (
-                                            <button key={pt.key} className={`wiz-pkg-card${pkgType === pt.key ? ' sel' : ''}`} onClick={() => setPkgType(pt.key)}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                                                    <span style={{ fontSize: 30, lineHeight: 1 }}>{pt.icon}</span>
-                                                    <div>
-                                                        <p style={{ margin: 0, fontWeight: 700, fontSize: 16, color: pkgType === pt.key ? '#fff' : 'var(--heading)', letterSpacing: -0.2 }}>{pt.title}</p>
-                                                        <p style={{ margin: '3px 0 0', fontSize: 13.5, color: pkgType === pt.key ? 'rgba(255,255,255,0.8)' : 'var(--muted)' }}>{pt.desc}</p>
-                                                    </div>
-                                                    {pkgType === pt.key && (
-                                                        <div style={{ marginLeft: 'auto', width: 22, height: 22, borderRadius: '50%', background: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                                                        </div>
-                                                    )}
-                                                </div>
+                                            <button key={pt.key} onClick={() => setPkgType(pt.key)} style={{
+                                                flex: 1, display: 'flex', flexDirection: 'column',
+                                                alignItems: 'center', justifyContent: 'center',
+                                                gap: 5, padding: '12px 8px',
+                                                borderRadius: 10, border: 'none',
+                                                cursor: 'pointer', fontFamily: 'inherit',
+                                                background: pkgType === pt.key ? P : 'transparent',
+                                                color: pkgType === pt.key ? '#fff' : 'var(--muted)',
+                                                transition: 'all 0.18s',
+                                                boxShadow: pkgType === pt.key ? '0 2px 8px rgba(232,100,10,0.3)' : 'none',
+                                            }}>
+                                                <span style={{ fontSize: 22, lineHeight: 1 }}>{pt.icon}</span>
+                                                <span style={{ fontSize: 12.5, fontWeight: 700, letterSpacing: -0.2 }}>{pt.title}</span>
                                             </button>
                                         ))}
                                     </div>
 
-                                    {/* Meal type chips */}
-                                    <div style={{ marginTop: 18 }}>
-                                        <p style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 10px' }}>Meal Type</p>
-                                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                                            {[
-                                                { key: 'BREAKFAST', emoji: '🌅', label: 'Breakfast' },
-                                                { key: 'LUNCH', emoji: '☀️', label: 'Lunch' },
-                                                { key: 'SNACK', emoji: '🍿', label: 'Snack' },
-                                                { key: 'DINNER', emoji: '🌙', label: 'Dinner' },
-                                            ].map(m => (
-                                                <button key={m.key} onClick={() => setMealType(m.key)} style={{
-                                                    display: 'flex', alignItems: 'center', gap: 6,
-                                                    padding: '8px 14px', borderRadius: 999, fontFamily: 'inherit',
-                                                    border: `1.5px solid ${mealType === m.key ? P : 'var(--separator-nm)'}`,
-                                                    background: mealType === m.key ? P : 'var(--bg)',
-                                                    color: mealType === m.key ? '#fff' : 'var(--heading)',
-                                                    fontWeight: 600, fontSize: 14, cursor: 'pointer', transition: 'all 0.15s',
-                                                }}>
-                                                    <span>{m.emoji}</span> {m.label}
-                                                </button>
-                                            ))}
-                                        </div>
+                                    {/* Meal type */}
+                                    <p style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '22px 0 10px' }}>Meal Type</p>
+                                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                                        {[
+                                            { key: 'BREAKFAST', emoji: '🌅', label: 'Breakfast' },
+                                            { key: 'LUNCH', emoji: '☀️', label: 'Lunch' },
+                                            { key: 'SNACK', emoji: '🍿', label: 'Snack' },
+                                            { key: 'DINNER', emoji: '🌙', label: 'Dinner' },
+                                        ].map(m => (
+                                            <button key={m.key} onClick={() => setMealType(m.key)} style={{
+                                                display: 'flex', alignItems: 'center', gap: 5,
+                                                padding: '8px 16px', borderRadius: 999, fontFamily: 'inherit',
+                                                border: `1.5px solid ${mealType === m.key ? P : 'var(--separator-nm)'}`,
+                                                background: mealType === m.key ? P : 'var(--bg)',
+                                                color: mealType === m.key ? '#fff' : 'var(--heading)',
+                                                fontWeight: 600, fontSize: 13.5, cursor: 'pointer', transition: 'all 0.15s',
+                                            }}>
+                                                <span style={{ fontSize: 16 }}>{m.emoji}</span> {m.label}
+                                            </button>
+                                        ))}
                                     </div>
                                 </div>
                             )}
