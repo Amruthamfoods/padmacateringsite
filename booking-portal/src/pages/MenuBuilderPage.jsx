@@ -47,19 +47,28 @@ export default function MenuBuilderPage() {
       const initOpen = {}
       const initDiet = {}
       const initSearch = {}
+      const savedMenuItems = menuPreferences.menuItems || []
       freshPkg.categoryRules.forEach((rule, idx) => {
-        const defaultItems = freshPkg.items
-          .filter(pi => {
-            const i = items.find(it => it.id === (pi.menuItemId || pi.menuItem?.id))
-            if (rule.allowedItems?.length > 0) {
-              return rule.allowedItems.some(ai => ai.menuItemId === (i?.id))
-            }
-            return i && (rule.categoryId ? i.categoryId === rule.categoryId : true)
-          })
-          .map(pi => pi.menuItemId || pi.menuItem?.id)
-          .slice(0, rule.maxChoices)
+        // Restore previously saved selections if they exist and are still valid
+        const savedForRule = savedMenuItems
+          .filter(si => si.ruleId === rule.id && items.some(it => it.id === si.id))
+          .map(si => si.id)
 
-        initSelected[rule.id] = new Set(defaultItems)
+        if (savedForRule.length >= rule.minChoices) {
+          initSelected[rule.id] = new Set(savedForRule)
+        } else {
+          const defaultItems = freshPkg.items
+            .filter(pi => {
+              const i = items.find(it => it.id === (pi.menuItemId || pi.menuItem?.id))
+              if (rule.allowedItems?.length > 0) {
+                return rule.allowedItems.some(ai => ai.menuItemId === (i?.id))
+              }
+              return i && (rule.categoryId ? i.categoryId === rule.categoryId : true)
+            })
+            .map(pi => pi.menuItemId || pi.menuItem?.id)
+            .slice(0, rule.maxChoices)
+          initSelected[rule.id] = new Set(defaultItems)
+        }
         initOpen[rule.id] = true
         initDiet[rule.id] = 'ALL'
         initSearch[rule.id] = ''

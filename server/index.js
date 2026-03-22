@@ -63,6 +63,14 @@ app.get('/api/pricing/settings', async (req, res) => {
   } catch { res.json({ packingCostPercent: 5, mealboxDelivery: 500, packedFoodDelivery: 500, cateringDelivery: 1500, serviceChargeFlat: 1500, serviceChargeFreeAbove: 100 }) }
 })
 
+// Public: minimal settings for booking portal (advance hours, GST)
+app.get('/api/settings/public', async (req, res) => {
+  try {
+    const s = await prisma.pricingSettings.findUnique({ where: { id: 1 } })
+    res.json({ minAdvanceHours: s?.minAdvanceHours ?? 48, gstPercent: s?.gstPercent ?? 18 })
+  } catch { res.json({ minAdvanceHours: 48, gstPercent: 18 }) }
+})
+
 // ── Public delivery charge calculator ──
 const { PrismaClient: PrismaCalc } = require('@prisma/client')
 const prismaCalc = new PrismaCalc()
@@ -235,7 +243,7 @@ app.use((err, req, res, next) => {
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }))
 
 /* ─── Serve main site static files (catch-all — must be last) ─── */
-const mainDist = path.join(__dirname, '../main-site/dist')
+const mainDist = path.join(__dirname, '../dist')
 app.use(express.static(mainDist))
 app.get('*', (_req, res) => {
   res.sendFile(path.join(mainDist, 'index.html'))

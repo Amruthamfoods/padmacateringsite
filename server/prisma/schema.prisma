@@ -8,18 +8,67 @@ datasource db {
 }
 
 model User {
-  id            Int            @id @default(autoincrement())
-  name          String
-  email         String         @unique
-  phone         String?  @unique
-  address       String?
-  addressLat    Float?
-  addressLng    Float?
-  passwordHash  String
-  role          Role           @default(CUSTOMER)
-  createdAt     DateTime       @default(now())
-  bookings      Booking[]
-  quoteRequests QuoteRequest[]
+  id               Int               @id @default(autoincrement())
+  name             String
+  email            String            @unique
+  phone            String?           @unique
+  address          String?
+  addressLat       Float?
+  addressLng       Float?
+  passwordHash     String
+  role             Role              @default(CUSTOMER)
+  createdAt        DateTime          @default(now())
+  points           Int               @default(0)
+  referralCode     String?           @unique
+  gstName          String?
+  gstNumber        String?
+  bookings         Booking[]
+  quoteRequests    QuoteRequest[]
+  addresses        UserAddress[]
+  coinTransactions CoinTransaction[]
+  referralsGiven   Referral[]        @relation("Referrer")
+  referralsReceived Referral[]       @relation("Referred")
+}
+
+model UserAddress {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label     String?
+  address   String
+  lat       Float?
+  lng       Float?
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model CoinTransaction {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  points    Int
+  note      String?
+  bookingId Int?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([bookingId])
+}
+
+model Referral {
+  id         Int      @id @default(autoincrement())
+  referrerId Int
+  referrer   User     @relation("Referrer", fields: [referrerId], references: [id])
+  referredId Int
+  referred   User     @relation("Referred", fields: [referredId], references: [id])
+  status     String   @default("PENDING")
+  createdAt  DateTime @default(now())
+
+  @@unique([referrerId, referredId])
+  @@index([referrerId])
 }
 
 enum Role {
@@ -37,18 +86,18 @@ model MenuCategory {
 }
 
 model MenuItem {
-  id          Int               @id @default(autoincrement())
-  name        String
-  description String?
-  image       String?
-  categoryId  Int
-  category    MenuCategory      @relation(fields: [categoryId], references: [id])
-  style       CuisineStyle      @default(ANDHRA)
-  type        DietType          @default(VEG)
-  active      Boolean           @default(true)
-  price       Float             @default(0)
-  servingSize Float?
-  servingUnit String?
+  id             Int                      @id @default(autoincrement())
+  name           String
+  description    String?
+  image          String?
+  categoryId     Int
+  category       MenuCategory             @relation(fields: [categoryId], references: [id])
+  style          CuisineStyle             @default(ANDHRA)
+  type           DietType                 @default(VEG)
+  active         Boolean                  @default(true)
+  price          Float                    @default(0)
+  servingSize    Float?
+  servingUnit    String?
   packages       MenuPackageItem[]
   bookings       BookingMenuItem[]
   allowedInRules PackageCategoryRuleItem[]
@@ -69,8 +118,8 @@ enum DietType {
 model MenuPackage {
   id            Int                   @id @default(autoincrement())
   name          String
-  eventType     String?   // event categories (Birthday, Wedding, etc.) comma-separated
-  serviceType   String?   // service type (Meal Box, Delivery, Catering) comma-separated
+  eventType     String?
+  serviceType   String?
   style         CuisineStyle          @default(ANDHRA)
   type          DietType              @default(VEG)
   servesMin     Int                   @default(50)
@@ -78,6 +127,7 @@ model MenuPackage {
   image         String?
   basePrice     Float                 @default(0)
   mealTypes     String[]              @default(["Lunch", "Dinner"])
+  badge         String?
   items         MenuPackageItem[]
   pricingTiers  PackagePricingTier[]
   categoryRules PackageCategoryRule[]
@@ -102,18 +152,18 @@ model PackageCategoryRule {
   minChoices     Int                       @default(1)
   maxChoices     Int
   extraItemPrice Float                     @default(0)
-  qtyPerPerson   Float?                    // serving qty per person for whole category
-  qtyUnit        String?                   // gm | kg | pcs
+  qtyPerPerson   Float?
+  qtyUnit        String?
   allowedItems   PackageCategoryRuleItem[]
 }
 
 model PackageCategoryRuleItem {
-  id         Int                 @id @default(autoincrement())
-  ruleId     Int
-  rule       PackageCategoryRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
-  menuItemId    Int
-  menuItem      MenuItem            @relation(fields: [menuItemId], references: [id])
-  premiumPrice  Float?  // extra charge above base; null = standard included item
+  id           Int                 @id @default(autoincrement())
+  ruleId       Int
+  rule         PackageCategoryRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  menuItemId   Int
+  menuItem     MenuItem            @relation(fields: [menuItemId], references: [id])
+  premiumPrice Float?
 
   @@unique([ruleId, menuItemId])
 }
@@ -127,6 +177,26 @@ model MenuPackageItem {
   menuItem          MenuItem    @relation(fields: [menuItemId], references: [id])
 
   @@id([packageId, menuItemId])
+}
+
+model AddOn {
+  id             Int           @id @default(autoincrement())
+  name           String
+  description    String?
+  pricePerPerson Float
+  active         Boolean       @default(true)
+  sortOrder      Int           @default(0)
+  bookings       BookingAddOn[]
+}
+
+model BookingAddOn {
+  bookingId Int
+  addOnId   Int
+  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  addOn     AddOn   @relation(fields: [addOnId], references: [id])
+  quantity  Int     @default(1)
+
+  @@id([bookingId, addOnId])
 }
 
 enum QuoteStatus {
@@ -188,14 +258,19 @@ model Booking {
   discount            Float             @default(0)
   gst                 Float             @default(0)
   total               Float             @default(0)
+  coinsRedeemed       Int               @default(0)
+  cashback            Float             @default(0)
   guestName           String?
   guestPhone          String?
   guestEmail          String?
+  gstName             String?
+  gstNumber           String?
   razorpayOrderId     String?
   razorpayPaymentId   String?
   adminNotes          String?
   createdAt           DateTime          @default(now())
   menuItems           BookingMenuItem[]
+  addOns              BookingAddOn[]
 
   @@index([eventDate])
   @@index([createdAt])
@@ -271,7 +346,7 @@ model BlockedDate {
   id           Int      @id @default(autoincrement())
   date         DateTime @unique
   reason       String?
-  blockedSlots String[] @default([]) // Empty means whole day blocked
+  blockedSlots String[] @default([])
 }
 
 model OtpCode {
@@ -286,16 +361,20 @@ model OtpCode {
 }
 
 model RewardSettings {
-  id             Int     @id @default(1)
-  enabled        Boolean @default(true)
-  pointsPer100   Float   @default(4)     // points earned per ₹100 spent
-  pointValue     Float   @default(0.25)  // ₹ value per point
-  expiryDays     Int?                    // null = never expire
-  minRedeem      Int     @default(100)   // min points to redeem
-  silverMin      Int     @default(500)
-  silverDiscount Float   @default(5)
-  goldMin        Int     @default(2000)
-  goldDiscount   Float   @default(10)
+  id               Int     @id @default(1)
+  enabled          Boolean @default(true)
+  pointsPer100     Float   @default(4)
+  pointValue       Float   @default(0.25)
+  expiryDays       Int?
+  minRedeem        Int     @default(100)
+  silverMin        Int     @default(500)
+  silverDiscount   Float   @default(5)
+  goldMin          Int     @default(2000)
+  goldDiscount     Float   @default(10)
+  platinumMin      Int     @default(5000)
+  platinumDiscount Float   @default(15)
+  signupBonus      Int     @default(300)
+  referralBonus    Int     @default(200)
 }
 
 model DeliverySettings {
@@ -303,7 +382,7 @@ model DeliverySettings {
   baseAddress   String  @default("Visakhapatnam, Andhra Pradesh")
   baseLat       Float   @default(17.6868)
   baseLng       Float   @default(83.2185)
-  freeUpToKm    Float   @default(0)      // 0 = no free zone (bulk 100+ packs handled separately)
+  freeUpToKm    Float   @default(0)
   tier1MaxKm    Float   @default(5)
   tier1Charge   Float   @default(300)
   tier2MaxKm    Float   @default(10)
@@ -312,16 +391,19 @@ model DeliverySettings {
   tier3Charge   Float   @default(800)
   tier4MaxKm    Float   @default(20)
   tier4Charge   Float   @default(1200)
-  tier5Charge   Float   @default(1500)   // 20-30km
-  maxDeliveryKm Float   @default(30)     // beyond this: not serviceable
+  tier5Charge   Float   @default(1500)
+  maxDeliveryKm Float   @default(30)
 }
 
 model PricingSettings {
   id                     Int   @id @default(1)
-  packingCostPercent     Float @default(5)     // % of base price for Mealbox/PackedFood packing
-  mealboxDelivery        Float @default(500)   // flat delivery for Mealbox
-  packedFoodDelivery     Float @default(500)   // flat delivery for Packed Food
-  cateringDelivery       Float @default(1500)  // flat delivery for Catering (full service)
-  serviceChargeFlat      Float @default(1500)  // flat service charge for Catering
-  serviceChargeFreeAbove Int   @default(100)   // free service above this many guests
+  packingCostPercent     Float @default(5)
+  packingChargeFixed     Float @default(10.90)
+  mealboxDelivery        Float @default(500)
+  packedFoodDelivery     Float @default(500)
+  cateringDelivery       Float @default(1500)
+  serviceChargeFlat      Float @default(1500)
+  serviceChargeFreeAbove Int   @default(100)
+  minAdvanceHours        Int   @default(48)
+  gstPercent             Float @default(18)
 }

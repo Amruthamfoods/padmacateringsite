@@ -6,6 +6,8 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useBookingStore } from '../store/useBookingStore'
+import api from '../lib/api'
+import useAuthStore from '../store/authStore'
 
 const STEPS = [
     { id: 'location', label: 'Location' },
@@ -16,44 +18,81 @@ const STEPS = [
 ]
 
 const PACKAGE_TYPES = [
-    { key: 'BOX', icon: '🥡', title: 'Meal Box', desc: 'Individual boxes delivered to your guests' },
-    { key: 'BULK', icon: '📦', title: 'Delivery Box', desc: 'Bulk containers for self-service setups' },
-    { key: 'CATERING', icon: '🍛', title: 'Full Catering', desc: 'Live cooking + service at your venue' },
+    { key: 'BOX',      icon: '🍱', title: 'Meal Box',      color: '#007AFF', desc: 'Individually curated meals, elegantly packed for one. A perfect blend of taste, hygiene, and convenience.' },
+    { key: 'BULK',     icon: '📦', title: 'Delivery Box',  color: '#34C759', desc: 'Carefully packed bulk orders for safe and seamless transport. Designed to retain freshness, quality, and presentation.' },
+    { key: 'CATERING', icon: '🍛', title: 'Full Catering', color: '#FF6B35', desc: 'Exquisite culinary experiences crafted for every occasion. Flawless service, refined presentation, and exceptional taste.' },
 ]
 
-function toDateStr(d) { return d.toISOString().split('T')[0] }
+function toDateStr(d) {
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${y}-${m}-${day}`
+}
 const TODAY = toDateStr(new Date())
 const DAY_SHORT = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
 const MONTHS_FULL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
-function get60Days() {
+function getMinDate(hours) { return toDateStr(new Date(Date.now() + hours * 60 * 60 * 1000)) }
+
+function get60Days(minAdvanceHours) {
     return Array.from({ length: 60 }, (_, i) => {
-        const d = new Date(); d.setDate(d.getDate() + i); return d
+        const d = new Date(Date.now() + minAdvanceHours * 60 * 60 * 1000)
+        d.setDate(d.getDate() + i)
+        return d
     })
 }
 
 export default function BookingWizard({ onClose }) {
     const navigate = useNavigate()
     const { setEventDetails } = useBookingStore()
+    const { token: authToken } = useAuthStore()
     const [step, setStep] = useState(0)
     const [leaving, setLeaving] = useState(false)
     const [direction, setDirection] = useState(1)
 
     // Form state
     const [city, setCity] = useState('')
-    const [date, setDate] = useState(TODAY)
-    const [showCalendar, setShowCalendar] = useState(false)
+    const [date, setDate] = useState(getMinDate(48))
+    const [showCal, setShowCal] = useState(false)
+    const [calMonth, setCalMonth] = useState(() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() } })
     const [guests, setGuests] = useState(50)
     const [guestEditing, setGe] = useState(false)
     const [guestInput, setGi] = useState('')
     const [pkgType, setPkgType] = useState('')
     const [mealType, setMealType] = useState('')
     const [diet, setDiet] = useState('')
+    const [cityLat, setCityLat] = useState(null)
+    const [cityLng, setCityLng] = useState(null)
+    const [locationError, setLocationError] = useState('')
+    const [checkingRange, setCheckingRange] = useState(false)
+    const [savedAddresses, setSavedAddresses] = useState([])
+    const [addressLabel, setAddressLabel] = useState('')
+    const [minAdvanceHours, setMinAdvanceHours] = useState(48)
 
+
+    // Fetch public settings on mount
+    useEffect(() => {
+        api.get('/api/settings/public')
+            .then(r => {
+                const hrs = r.data?.minAdvanceHours ?? 48
+                setMinAdvanceHours(hrs)
+                setDate(getMinDate(hrs))
+            })
+            .catch(() => {})
+    }, [])
+
+    // Fetch saved addresses when logged in
+    useEffect(() => {
+        if (!authToken) return
+        api.get('/booking/my-addresses', { headers: { Authorization: `Bearer ${authToken}` } })
+            .then(r => { if (Array.isArray(r.data)) setSavedAddresses(r.data) })
+            .catch(() => {})
+    }, [authToken])
     const dateRef = useRef(null)
     const cityInputRef = useRef(null)
     const acRef = useRef(null) // Google Places Autocomplete instance
-    const allDays = get60Days()
+    const allDays = get60Days(minAdvanceHours)
     const monthGroups = allDays.reduce((acc, d) => {
         const key = `${d.getFullYear()}-${d.getMonth()}`
         if (!acc.find(g => g.key === key)) acc.push({ key, label: MONTHS_FULL[d.getMonth()], days: [] })
@@ -75,7 +114,24 @@ export default function BookingWizard({ onClose }) {
             acRef.current.addListener('place_changed', () => {
                 const place = acRef.current.getPlace()
                 const addr = place.formatted_address || place.name || ''
+                const lat = place.geometry?.location?.lat()
+                const lng = place.geometry?.location?.lng()
                 setCity(addr)
+                setCityLat(lat || null)
+                setCityLng(lng || null)
+                setLocationError('')
+                if (lat && lng) {
+                  setCheckingRange(true)
+                  api.post('/delivery/calculate', { lat, lng, guestCount: 50 })
+                    .then(({ data }) => {
+                      if (data.outOfRange) {
+                        setLocationError('Sorry, we only serve within 30 km of Visakhapatnam. Please choose a closer location. We serve in Andhra, Telangana & Odisha. Contact +91 86 86 622 722 for bookings outside Visakhapatnam.')
+                        setCityLat(null); setCityLng(null)
+                      }
+                    })
+                    .catch(() => {})
+                    .finally(() => setCheckingRange(false))
+                }
             })
         }
         setTimeout(tryInit, 200)
@@ -107,8 +163,27 @@ export default function BookingWizard({ onClose }) {
         if (!isNaN(p)) setGuests(Math.min(1000, Math.max(10, p)))
         setGe(false)
     }
+    async function pickSavedAddress(addr) {
+        setCity(addr.address)
+        setAddressLabel(addr.label || '')
+        setLocationError('')
+        if (addr.lat && addr.lng) {
+            setCityLat(addr.lat); setCityLng(addr.lng)
+            setCheckingRange(true)
+            try {
+                const { data } = await api.post('/delivery/calculate', { lat: addr.lat, lng: addr.lng, guestCount: 50 })
+                if (data.outOfRange) {
+                    setLocationError('Sorry, we only serve within 30 km of Visakhapatnam. Please choose a closer location. We serve in Andhra, Telangana & Odisha. Contact +91 86 86 622 722 for bookings outside Visakhapatnam.')
+                    setCityLat(null); setCityLng(null); setCity('')
+                }
+            } catch {} finally { setCheckingRange(false) }
+        } else {
+            setCityLat(null); setCityLng(null)
+        }
+    }
+
     function canNext() {
-        if (step === 0) return city.trim().length > 0
+        if (step === 0) return city.trim().length > 0 && !locationError && !checkingRange
         if (step === 1) return !!date
         if (step === 2) return guests >= 10
         if (step === 3) return !!pkgType && !!mealType
@@ -219,7 +294,28 @@ export default function BookingWizard({ onClose }) {
                                 <div>
                                     <p style={{ fontSize: 11, fontWeight: 700, color: P, textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 6px' }}>Step 1</p>
                                     <h2 style={{ fontSize: 26, fontWeight: 700, color: 'var(--heading)', margin: '0 0 6px', letterSpacing: '-0.03em' }}>Where's the event?</h2>
-                                    <p style={{ color: 'var(--muted)', fontSize: 14.5, margin: '0 0 18px' }}>We'll show packages available for your area.</p>
+                                    <p style={{ color: 'var(--muted)', fontSize: 14.5, margin: '0 0 14px' }}>We'll show packages available for your area.</p>
+
+                                    {/* Address label — shown after address is selected */}
+                                    {city && !locationError && (
+                                    <input
+                                        type="text"
+                                        value={addressLabel}
+                                        onChange={e => setAddressLabel(e.target.value)}
+                                        placeholder="Address name (e.g. Home, Wedding Hall, Office)"
+                                        style={{
+                                            width: '100%', padding: '11px 14px', borderRadius: 10,
+                                            border: '1.5px solid var(--separator-nm)', fontSize: 14,
+                                            color: 'var(--heading)', background: 'var(--bg)',
+                                            fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
+                                            marginBottom: 8,
+                                        }}
+                                        onFocus={e => e.target.style.borderColor = P}
+                                        onBlur={e => e.target.style.borderColor = 'var(--separator-nm)'}
+                                    />
+                                    )}
+
+                                    {/* Address search */}
                                     <div style={{ position: 'relative' }}>
                                         <svg style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}
                                             width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -230,13 +326,13 @@ export default function BookingWizard({ onClose }) {
                                             type="text"
                                             defaultValue={city}
                                             onKeyDown={e => e.key === 'Enter' && canNext() && goTo(1)}
-                                            onInput={e => setCity(e.target.value)}
+                                            onInput={e => { setCity(e.target.value); setLocationError(''); setCityLat(null); setCityLng(null); setAddressLabel('') }}
                                             placeholder="Search venue, area or city…"
                                             autoComplete="off"
                                             style={{
-                                                width: '100%', padding: '15px 16px 15px 42px',
+                                                width: '100%', padding: '13px 16px 13px 42px',
                                                 borderRadius: 12, border: `1.5px solid var(--separator-nm)`,
-                                                fontSize: 16, color: 'var(--heading)', background: 'var(--bg)',
+                                                fontSize: 15, color: 'var(--heading)', background: 'var(--bg)',
                                                 fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
                                                 transition: 'border-color 0.15s',
                                             }}
@@ -244,105 +340,159 @@ export default function BookingWizard({ onClose }) {
                                             onBlur={e => e.target.style.borderColor = 'var(--separator-nm)'}
                                         />
                                     </div>
-                                    <p style={{ fontSize: 12.5, color: 'var(--muted)', margin: '10px 0 0' }}>e.g. Vizag, Gajuwaka, MVP Colony, Rushikonda…</p>
-                                </div>
-                            )}
+                                    <p style={{ fontSize: 12, color: 'var(--muted)', margin: '6px 0 0' }}>e.g. Vizag, Gajuwaka, MVP Colony, Rushikonda…</p>
 
-                            {/* ── STEP 1: Date with scroll strip + calendar fallback ── */}
-                            {step === 1 && (
-                                <div>
-                                    <p style={{ fontSize: 11, fontWeight: 700, color: P, textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 6px' }}>Step 2</p>
-                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                                        <h2 style={{ fontSize: 26, fontWeight: 700, color: 'var(--heading)', margin: 0, letterSpacing: '-0.03em' }}>When's your event?</h2>
-                                        {/* Calendar toggle */}
-                                        <button
-                                            onClick={() => setShowCalendar(v => !v)}
-                                            title="Pick from calendar"
-                                            style={{
-                                                display: 'flex', alignItems: 'center', gap: 5,
-                                                padding: '6px 12px', borderRadius: 999,
-                                                border: `1.5px solid ${showCalendar ? P : 'var(--separator-nm)'}`,
-                                                background: showCalendar ? PBG : 'var(--bg)',
-                                                color: showCalendar ? P : 'var(--muted)',
-                                                cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5, fontWeight: 600,
-                                                flexShrink: 0, transition: 'all 0.15s',
-                                            }}
-                                        >
-                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
-                                            Calendar
-                                        </button>
-                                    </div>
-                                    <p style={{ color: 'var(--muted)', fontSize: 14.5, margin: '0 0 16px' }}>Pick a date and we'll check availability.</p>
-
-                                    {showCalendar ? (
-                                        /* Full calendar input for far-future dates */
-                                        <div style={{ marginBottom: 16 }}>
-                                            <input
-                                                type="date"
-                                                value={date}
-                                                min={TODAY}
-                                                onChange={e => { setDate(e.target.value); }}
-                                                style={{
-                                                    width: '100%', padding: '13px 16px', borderRadius: 12,
-                                                    border: `1.5px solid ${P}`, fontSize: 15.5,
-                                                    color: 'var(--heading)', background: 'var(--bg)',
-                                                    fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
-                                                }}
-                                            />
-                                            <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 8 }}>You can select any date — even months away.</p>
+                                    {checkingRange && (
+                                        <p style={{ fontSize: 12.5, color: 'var(--primary)', margin: '8px 0 0' }}>
+                                            <i className="fa-solid fa-circle-notch fa-spin" style={{ marginRight: 6 }} />
+                                            Checking delivery range...
+                                        </p>
+                                    )}
+                                    {locationError && (
+                                        <div style={{ marginTop: 10, padding: '10px 14px', background: 'rgba(244,67,54,0.07)', borderRadius: 10, border: '1.5px solid rgba(244,67,54,0.25)', display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                                            <i className="fa-solid fa-circle-exclamation" style={{ color: '#d32f2f', marginTop: 1, flexShrink: 0 }} />
+                                            <p style={{ fontSize: 13, color: '#c62828', margin: 0, lineHeight: 1.5 }}>{locationError}</p>
                                         </div>
-                                    ) : (
-                                        /* Horizontal date strip */
-                                        <div ref={dateRef} style={{ overflowX: 'auto', scrollbarWidth: 'none', marginBottom: 16 }}>
-                                            <div style={{ display: 'flex', gap: 0, width: 'max-content', paddingBottom: 6 }}>
-                                                {monthGroups.map(group => (
-                                                    <div key={group.key} style={{ display: 'flex', alignItems: 'center' }}>
-                                                        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', width: 22, flexShrink: 0 }}>
-                                                            <span style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)', fontSize: 8, fontWeight: 700, color: P, textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.8 }}>
-                                                                {group.label.slice(0, 3)}
-                                                            </span>
+                                    )}
+
+                                    {/* Saved addresses (logged-in users) */}
+                                    {savedAddresses.length > 0 && (
+                                        <div style={{ marginTop: 18 }}>
+                                            <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 8px' }}>Saved Addresses</p>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                                {savedAddresses.map(addr => (
+                                                    <button key={addr.id} onClick={() => pickSavedAddress(addr)} style={{
+                                                        display: 'flex', alignItems: 'flex-start', gap: 10, width: '100%',
+                                                        padding: '10px 12px', background: city === addr.address ? 'var(--primary-bg)' : 'var(--fill-tertiary)',
+                                                        border: city === addr.address ? '1.5px solid var(--primary-light)' : '1.5px solid transparent',
+                                                        borderRadius: 10, cursor: 'pointer', textAlign: 'left',
+                                                    }}>
+                                                        <i className="fa-solid fa-location-dot" style={{ color: city === addr.address ? 'var(--primary)' : 'var(--muted)', marginTop: 2, flexShrink: 0, fontSize: 13 }} />
+                                                        <div style={{ minWidth: 0 }}>
+                                                            {addr.label && <p style={{ margin: '0 0 1px', fontSize: 13, fontWeight: 700, color: 'var(--heading)' }}>{addr.label}</p>}
+                                                            <p style={{ margin: 0, fontSize: 12.5, color: 'var(--muted)', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{addr.address}</p>
                                                         </div>
-                                                        {group.days.map(d => {
-                                                            const ds = toDateStr(d)
-                                                            const isSel = ds === date
-                                                            const isToday = ds === TODAY
-                                                            const isPast = ds < TODAY
-                                                            return (
-                                                                <button key={ds} data-today={isToday} disabled={isPast}
-                                                                    onClick={() => !isPast && setDate(ds)}
-                                                                    className={`wiz-date-btn${isSel ? ' sel' : ''}`}>
-                                                                    <span style={{ fontSize: 9, fontWeight: 500, color: isSel ? 'rgba(255,255,255,0.7)' : 'var(--muted)', marginBottom: 2 }}>
-                                                                        {DAY_SHORT[d.getDay()]}
-                                                                    </span>
-                                                                    <div style={{
-                                                                        width: 32, height: 32, borderRadius: '50%',
-                                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                                        border: isToday && !isSel ? `2px solid ${P}` : '2px solid transparent',
-                                                                    }}>
-                                                                        <span style={{ fontSize: 14, fontWeight: isSel || isToday ? 700 : 400, color: isSel ? '#fff' : isToday ? P : 'var(--heading)' }}>
-                                                                            {d.getDate()}
-                                                                        </span>
-                                                                    </div>
-                                                                </button>
-                                                            )
-                                                        })}
-                                                    </div>
+                                                        {addr.isDefault && <span style={{ marginLeft: 'auto', fontSize: 10, fontWeight: 700, color: 'var(--primary)', background: 'var(--primary-bg)', padding: '2px 7px', borderRadius: 10, flexShrink: 0 }}>DEFAULT</span>}
+                                                    </button>
                                                 ))}
                                             </div>
                                         </div>
                                     )}
+                                </div>
+                            )}
 
-                                    {/* Selected date pill — orange */}
+                            {/* ── STEP 1: Date strip + inline calendar ── */}
+                            {step === 1 && (
+                                <div>
+                                    <p style={{ fontSize: 11, fontWeight: 700, color: P, textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 6px' }}>Step 2</p>
+                                    <h2 style={{ fontSize: 26, fontWeight: 700, color: 'var(--heading)', margin: '0 0 6px', letterSpacing: '-0.03em' }}>When's your event?</h2>
+                                    <p style={{ color: 'var(--muted)', fontSize: 14.5, margin: '0 0 16px' }}>Tap a date to pick — or scroll for more.</p>
+
+                                    {/* Horizontal date strip */}
+                                    <div ref={dateRef} style={{ overflowX: 'auto', scrollbarWidth: 'none', marginBottom: 12 }}>
+                                        <div style={{ display: 'flex', gap: 0, width: 'max-content', paddingBottom: 4 }}>
+                                            {monthGroups.map(group => (
+                                                <div key={group.key} style={{ display: 'flex', alignItems: 'center' }}>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', width: 22, flexShrink: 0 }}>
+                                                        <span style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)', fontSize: 8, fontWeight: 700, color: P, textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.8 }}>
+                                                            {group.label.slice(0, 3)}
+                                                        </span>
+                                                    </div>
+                                                    {group.days.map(d => {
+                                                        const ds = toDateStr(d)
+                                                        const isSel = ds === date
+                                                        const isToday = ds === TODAY
+                                                        const isPast = ds < getMinDate(minAdvanceHours)
+                                                        return (
+                                                            <button key={ds} data-today={isToday} disabled={isPast}
+                                                                onClick={() => {
+                                                                    if (isPast) return
+                                                                    setDate(ds)
+                                                                    setCalMonth({ y: d.getFullYear(), m: d.getMonth() })
+                                                                    setShowCal(true)
+                                                                }}
+                                                                className={`wiz-date-btn${isSel ? ' sel' : ''}`}>
+                                                                <span style={{ fontSize: 9, fontWeight: 500, color: isSel ? 'rgba(255,255,255,0.7)' : 'var(--muted)', marginBottom: 2 }}>
+                                                                    {DAY_SHORT[d.getDay()]}
+                                                                </span>
+                                                                <div style={{ width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: isToday && !isSel ? `2px solid ${P}` : '2px solid transparent' }}>
+                                                                    <span style={{ fontSize: 14, fontWeight: isSel || isToday ? 700 : 400, color: isSel ? '#fff' : isToday ? P : 'var(--heading)' }}>
+                                                                        {d.getDate()}
+                                                                    </span>
+                                                                </div>
+                                                            </button>
+                                                        )
+                                                    })}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Selected date pill */}
                                     {date && (
-                                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '8px 14px', borderRadius: 999, background: P, color: '#fff' }}>
+                                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '7px 13px', borderRadius: 999, background: P, color: '#fff', marginBottom: 12, cursor: 'pointer' }}
+                                            onClick={() => setShowCal(v => !v)}>
                                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
                                             <span style={{ fontSize: 13.5, fontWeight: 600 }}>
                                                 {(() => { const [y, m, dd] = date.split('-'); return new Date(+y, +m - 1, +dd).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' }) })()}
                                             </span>
+                                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ opacity: 0.7 }}><polyline points={showCal ? '18 15 12 9 6 15' : '6 9 12 15 18 9'} /></svg>
                                         </div>
                                     )}
+
+                                    {/* Inline month calendar */}
+                                    {showCal && (() => {
+                                        const { y, m } = calMonth
+                                        const firstDay = new Date(y, m, 1).getDay()
+                                        const daysInMonth = new Date(y, m + 1, 0).getDate()
+                                        const cells = []
+                                        for (let i = 0; i < firstDay; i++) cells.push(null)
+                                        for (let i = 1; i <= daysInMonth; i++) cells.push(i)
+                                        const todayParts = TODAY.split('-').map(Number)
+                                        return (
+                                            <div style={{ borderRadius: 14, border: `1.5px solid ${P}40`, overflow: 'hidden', background: 'var(--bg)', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
+                                                {/* Month nav */}
+                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: P, color: '#fff' }}>
+                                                    <button onClick={() => setCalMonth(({ y, m }) => m === 0 ? { y: y - 1, m: 11 } : { y, m: m - 1 })}
+                                                        style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: 8, width: 28, height: 28, cursor: 'pointer', color: '#fff', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>‹</button>
+                                                    <span style={{ fontWeight: 700, fontSize: 15 }}>{MONTHS_FULL[m]} {y}</span>
+                                                    <button onClick={() => setCalMonth(({ y, m }) => m === 11 ? { y: y + 1, m: 0 } : { y, m: m + 1 })}
+                                                        style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: 8, width: 28, height: 28, cursor: 'pointer', color: '#fff', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>›</button>
+                                                </div>
+                                                {/* Day headers */}
+                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', padding: '8px 10px 4px' }}>
+                                                    {['Su','Mo','Tu','We','Th','Fr','Sa'].map(d => (
+                                                        <div key={d} style={{ textAlign: 'center', fontSize: 11, fontWeight: 700, color: 'var(--muted)', padding: '2px 0' }}>{d}</div>
+                                                    ))}
+                                                </div>
+                                                {/* Dates */}
+                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', padding: '0 10px 12px', gap: 2 }}>
+                                                    {cells.map((day, idx) => {
+                                                        if (!day) return <div key={idx} />
+                                                        const ds = `${y}-${String(m + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+                                                        const isPast = ds < getMinDate(minAdvanceHours)
+                                                        const isSel = ds === date
+                                                        const isToday = y === todayParts[0] && (m + 1) === todayParts[1] && day === todayParts[2]
+                                                        return (
+                                                            <button key={ds} disabled={isPast} onClick={() => { if (!isPast) { setDate(ds); setShowCal(false) } }}
+                                                                style={{
+                                                                    height: 36, borderRadius: 8, border: 'none', cursor: isPast ? 'default' : 'pointer',
+                                                                    background: isSel ? P : isToday ? `${P}20` : 'transparent',
+                                                                    color: isSel ? '#fff' : isPast ? 'var(--separator-nm)' : isToday ? P : 'var(--heading)',
+                                                                    fontWeight: isSel || isToday ? 700 : 400, fontSize: 14, fontFamily: 'inherit',
+                                                                    transition: 'background 0.15s',
+                                                                }}>
+                                                                {day}
+                                                            </button>
+                                                        )
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )
+                                    })()}
                                 </div>
                             )}
+
 
                             {/* ── STEP 2: Guests ── */}
                             {step === 2 && (
@@ -390,7 +540,7 @@ export default function BookingWizard({ onClose }) {
                                     {/* 3-button segmented control */}
                                     <div style={{
                                         display: 'flex', gap: 8,
-                                        background: 'var(--fill-tertiary)', borderRadius: 14,
+                                        borderRadius: 14,
                                         padding: 5,
                                     }}>
                                         {PACKAGE_TYPES.map(pt => (
@@ -398,12 +548,12 @@ export default function BookingWizard({ onClose }) {
                                                 flex: 1, display: 'flex', flexDirection: 'column',
                                                 alignItems: 'center', justifyContent: 'center',
                                                 gap: 5, padding: '12px 8px',
-                                                borderRadius: 10, border: 'none',
+                                                borderRadius: 10, border: `1.5px solid ${pkgType === pt.key ? pt.color : pt.color + "40"}`,
                                                 cursor: 'pointer', fontFamily: 'inherit',
-                                                background: pkgType === pt.key ? P : 'transparent',
-                                                color: pkgType === pt.key ? '#fff' : 'var(--muted)',
+                                                background: pkgType === pt.key ? pt.color : 'var(--bg)',
+                                                color: pkgType === pt.key ? '#fff' : 'var(--heading)',
                                                 transition: 'all 0.18s',
-                                                boxShadow: pkgType === pt.key ? '0 2px 8px rgba(232,100,10,0.3)' : 'none',
+                                                boxShadow: pkgType === pt.key ? `0 2px 8px ${pt.color}55` : 'none',
                                             }}>
                                                 <span style={{ fontSize: 22, lineHeight: 1 }}>{pt.icon}</span>
                                                 <span style={{ fontSize: 12.5, fontWeight: 700, letterSpacing: -0.2 }}>{pt.title}</span>
@@ -412,8 +562,19 @@ export default function BookingWizard({ onClose }) {
                                     </div>
 
                                     {/* Meal type */}
+
+                                    {/* Selected service description */}
+                                    {pkgType && (() => {
+                                        const pt = PACKAGE_TYPES.find(t => t.key === pkgType)
+                                        return pt ? (
+                                            <div style={{ marginTop: 12, padding: '10px 14px', borderRadius: 10, background: pt.color + '12', border: '1.5px solid ' + pt.color + '40', display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                <span style={{ fontSize: 18 }}>{pt.icon}</span>
+                                                <p style={{ margin: 0, fontSize: 13.5, color: 'var(--heading)', lineHeight: 1.4 }}>{pt.desc}</p>
+                                            </div>
+                                        ) : null
+                                    })()}
                                     <p style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '22px 0 10px' }}>Meal Type</p>
-                                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
                                         {[
                                             { key: 'BREAKFAST', emoji: '🌅', label: 'Breakfast' },
                                             { key: 'LUNCH', emoji: '☀️', label: 'Lunch' },
@@ -422,7 +583,7 @@ export default function BookingWizard({ onClose }) {
                                         ].map(m => (
                                             <button key={m.key} onClick={() => setMealType(m.key)} style={{
                                                 display: 'flex', alignItems: 'center', gap: 5,
-                                                padding: '8px 16px', borderRadius: 999, fontFamily: 'inherit',
+                                                padding: '10px 16px', borderRadius: 12, fontFamily: 'inherit', justifyContent: 'center',
                                                 border: `1.5px solid ${mealType === m.key ? P : 'var(--separator-nm)'}`,
                                                 background: mealType === m.key ? P : 'var(--bg)',
                                                 color: mealType === m.key ? '#fff' : 'var(--heading)',

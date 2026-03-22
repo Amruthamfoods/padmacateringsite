@@ -6,11 +6,59 @@ import { useBookingStore } from '../store/useBookingStore'
 
 const CAT_COLORS = { Wedding: '#E91E63', Corporate: '#1565C0', Social: '#F57C00', Religious: '#7B1FA2', Birthday: '#00897B' }
 
+function InProgressCard({ pkg, pricing, label, step, onContinue, onDiscard, compact }) {
+  const img = pkg.items?.find(pi => pi.menuItem?.image)?.menuItem?.image || pkg.image
+  return (
+    <div style={{
+      borderRadius: 16, background: 'var(--bg)',
+      border: '2px solid var(--primary-light)',
+      boxShadow: 'var(--shadow-green)',
+      overflow: 'hidden',
+      marginBottom: compact ? 20 : 0,
+    }}>
+      <div style={{ background: 'var(--primary)', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <i className="fa-solid fa-clock-rotate-left" style={{ color: '#fff', fontSize: 13 }} />
+        <span style={{ color: '#fff', fontWeight: 700, fontSize: 13 }}>Incomplete booking — {label}</span>
+      </div>
+      <div style={{ padding: '16px', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+        {img && (
+          <div style={{ width: 64, height: 64, borderRadius: 12, overflow: 'hidden', flexShrink: 0 }}>
+            <img src={img} alt={pkg.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          </div>
+        )}
+        <div style={{ flex: 1, minWidth: 160 }}>
+          <p style={{ margin: 0, fontWeight: 700, fontSize: 16, color: 'var(--heading)' }}>{pkg.name}</p>
+          {pricing?.total > 0 && (
+            <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--muted)' }}>Est. ₹{pricing.total.toLocaleString('en-IN')} total</p>
+          )}
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+          <button onClick={onDiscard} style={{ padding: '9px 14px', borderRadius: 'var(--r-pill)', background: 'var(--fill-tertiary)', color: 'var(--muted)', border: 'none', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>
+            Discard
+          </button>
+          <button onClick={onContinue} style={{ padding: '9px 18px', borderRadius: 'var(--r-pill)', background: 'var(--primary)', color: '#fff', border: 'none', fontWeight: 700, fontSize: 13, cursor: 'pointer', boxShadow: 'var(--shadow-green)' }}>
+            Continue →
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function CartPage() {
   const navigate = useNavigate()
   const { items, removeFromCart, clearCart } = useCartStore()
-  const { setMenuPreferences, setEventDetails } = useBookingStore()
+  const { menuPreferences, pricing, guestInfo, setMenuPreferences, setEventDetails, resetBooking } = useBookingStore()
   const [selected, setSelected] = useState(new Set())
+
+  const inProgressPkg = menuPreferences?.selectedPackage
+  const inProgressStep = inProgressPkg
+    ? (guestInfo?.name ? '/payment' : (pricing?.total || 0) > 0 ? '/details' : (menuPreferences?.menuItems?.length || 0) > 0 ? '/service' : '/menu')
+    : null
+  const inProgressLabel = inProgressStep === '/payment' ? 'Payment pending'
+    : inProgressStep === '/details' ? 'Fill in your details'
+    : inProgressStep === '/service' ? 'Choose service preference'
+    : 'Build your menu'
 
   function toggleSelect(id) {
     setSelected(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n })
@@ -28,7 +76,7 @@ export default function CartPage() {
     bookPackage(toBook[0])
   }
 
-  if (!items.length) return (
+  if (!items.length && !inProgressPkg) return (
     <div style={{ minHeight: '70vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: 32 }}>
       <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'var(--fill-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <i className="fa-solid fa-cart-shopping" style={{ fontSize: 32, color: 'var(--muted)' }} />
@@ -41,8 +89,31 @@ export default function CartPage() {
     </div>
   )
 
+  if (!items.length && inProgressPkg) return (
+    <div style={{ maxWidth: 900, margin: '0 auto', padding: '32px 16px' }}>
+      <InProgressCard pkg={inProgressPkg} pricing={pricing} label={inProgressLabel} step={inProgressStep}
+        onContinue={() => navigate(inProgressStep)}
+        onDiscard={() => { resetBooking(); navigate('/setup') }}
+      />
+      <div style={{ textAlign: 'center', marginTop: 32 }}>
+        <button onClick={() => navigate('/setup')} style={{ padding: '10px 24px', borderRadius: 'var(--r-pill)', background: 'var(--fill-tertiary)', color: 'var(--muted)', border: 'none', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
+          Browse Other Packages
+        </button>
+      </div>
+    </div>
+  )
+
   return (
     <div style={{ maxWidth: 900, margin: '0 auto', padding: '24px 16px 100px' }}>
+      {/* In-progress booking banner */}
+      {inProgressPkg && (
+        <InProgressCard pkg={inProgressPkg} pricing={pricing} label={inProgressLabel} step={inProgressStep}
+          onContinue={() => navigate(inProgressStep)}
+          onDiscard={() => resetBooking()}
+          compact
+        />
+      )}
+
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <div>

@@ -78,7 +78,7 @@ router.get('/me', authMiddleware, async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
-      select: { id: true, name: true, email: true, phone: true, address: true, addressLat: true, addressLng: true, role: true, createdAt: true },
+      select: { id: true, name: true, email: true, phone: true, address: true, addressLat: true, addressLng: true, role: true, createdAt: true, points: true, referralCode: true, gstName: true, gstNumber: true },
     })
     if (!user) {
       logger.warn('User not found', { userId: req.user.id })
@@ -188,12 +188,66 @@ router.put('/profile', authMiddleware, async (req, res) => {
     if (address !== undefined) data.address = address || null
     if (addressLat !== undefined) data.addressLat = addressLat ? parseFloat(addressLat) : null
     if (addressLng !== undefined) data.addressLng = addressLng ? parseFloat(addressLng) : null
+    // If the phone belongs to a ghost phone-login account, release it first
+    if (data.phone) {
+      const existing = await prisma.user.findUnique({ where: { phone: data.phone } })
+      if (existing && existing.id !== req.user.id && existing.email.endsWith('@padma.local')) {
+        await prisma.user.update({ where: { id: existing.id }, data: { phone: null } })
+      }
+    }
     const user = await prisma.user.update({ where: { id: req.user.id }, data })
     logger.info('Profile updated', { userId: user.id })
-    res.json({ user: { id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role } })
+    res.json({ user: { id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role, gstName: user.gstName, gstNumber: user.gstNumber, points: user.points, referralCode: user.referralCode } })
   } catch (err) {
     logger.error('Profile update error', { error: err.message })
+    if (err.code === 'P2002' && err.meta?.target?.includes('phone')) {
+      return res.status(400).json({ error: 'This phone number is already linked to another account' })
+    }
     res.status(500).json({ error: 'Failed to update profile' })
+  }
+})
+
+
+// GET /api/auth/addresses
+router.get('/addresses', authMiddleware, async (req, res) => {
+  try {
+    const addresses = await prisma.userAddress.findMany({
+      where: { userId: req.user.id },
+      orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
+    })
+    res.json(addresses)
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch addresses' })
+  }
+})
+
+// POST /api/auth/addresses
+router.post('/addresses', authMiddleware, async (req, res) => {
+  try {
+    const { label, address, lat, lng, isDefault } = req.body
+    if (!address?.trim()) return res.status(400).json({ error: 'Address is required' })
+    if (isDefault) {
+      await prisma.userAddress.updateMany({ where: { userId: req.user.id }, data: { isDefault: false } })
+    }
+    const addr = await prisma.userAddress.create({
+      data: { userId: req.user.id, label: label?.trim() || null, address: address.trim(), lat: lat || null, lng: lng || null, isDefault: !!isDefault },
+    })
+    res.json(addr)
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to save address' })
+  }
+})
+
+// DELETE /api/auth/addresses/:id
+router.delete('/addresses/:id', authMiddleware, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id)
+    const addr = await prisma.userAddress.findUnique({ where: { id } })
+    if (!addr || addr.userId !== req.user.id) return res.status(404).json({ error: 'Not found' })
+    await prisma.userAddress.delete({ where: { id } })
+    res.json({ ok: true })
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to delete address' })
   }
 })
 

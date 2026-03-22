@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import useAuthStore from '../store/authStore'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link, Navigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import api from '../lib/api'
 import { useBookingStore } from '../store/useBookingStore'
@@ -16,45 +16,65 @@ export default function PaymentPlanPage() {
   const [paymentMethod, setPaymentMethod] = useState('OFFLINE')
   const [venue, setVenue] = useState(eventDetails.venueAddress || '')
   const [venueConfirmed, setVenueConfirmed] = useState(!!(eventDetails.venueAddress))
-  const [venueLat, setVenueLat] = useState(null)
-  const [venueLng, setVenueLng] = useState(null)
+  const [venueLat, setVenueLat] = useState(eventDetails.venueLat || null)
+  const [venueLng, setVenueLng] = useState(eventDetails.venueLng || null)
   const { user: authUser, token: authToken } = useAuthStore()
   const [deliveryCharge, setDeliveryCharge] = useState(0)
   const [calcingDelivery, setCalcingDelivery] = useState(false)
   const [deliveryMeta, setDeliveryMeta] = useState(null)
+  const [savedAddresses, setSavedAddresses] = useState([])
+  const [addingNew, setAddingNew] = useState(false)
+  const [acKey, setAcKey] = useState(0)
 
   useEffect(() => {
     if (authUser?.name && !contact.name) setContact({ name: authUser.name || '', email: authUser.email || '', phone: authUser.phone || '' })
   }, [])
 
+  useEffect(() => {
+    if (!authToken) return
+    api.get('/booking/my-addresses', { headers: { Authorization: `Bearer ${authToken}` } })
+      .then(r => { if (Array.isArray(r.data) && r.data.length > 0) setSavedAddresses(r.data) })
+      .catch(() => {})
+  }, [authToken])
+
+  // Validate stored venue on mount
+  useEffect(() => {
+    if (eventDetails.venueLat && eventDetails.venueLng && eventDetails.venueAddress) {
+      calcDelivery(eventDetails.venueLat, eventDetails.venueLng).then(ok => {
+        if (!ok) setVenueConfirmed(false)
+      })
+    }
+  // eslint-disable-next-line
+  }, [])
+
   async function calcDelivery(lat, lng) {
-    if (!lat || !lng) return
+    if (!lat || !lng) return false
     setCalcingDelivery(true)
     try {
       const guestCount = eventDetails.guestCount || 0
       const { data } = await api.post('/delivery/calculate', { lat, lng, guestCount })
+      setDeliveryMeta(data)
       if (data.outOfRange) {
-        setDeliveryCharge(null)
+        setDeliveryCharge(null); setVenue(''); setAcKey(k => k + 1); setVenueLat(null); setVenueLng(null)
+        toast.error('Address is outside our delivery range (30 km from Visakhapatnam)')
+        return false
       } else {
         setDeliveryCharge(data.charge || 0)
+        return true
       }
-      setDeliveryMeta(data)
-    } catch { setDeliveryCharge(0); setDeliveryMeta(null) }
-    finally { setCalcingDelivery(false) }
+    } catch {
+      setDeliveryCharge(0); setDeliveryMeta(null)
+      return false
+    } finally {
+      setCalcingDelivery(false)
+    }
   }
 
   if (!pricing.total || !menuPreferences.selectedPackage) {
-    return (
-      <div style={{ minHeight: '100vh', background: 'var(--bg-page)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-        <div style={{ textAlign: 'center' }}>
-          <p style={{ color: 'var(--muted)', marginBottom: 16, fontSize: 15 }}>Please complete your booking setup first.</p>
-          <Link to="/setup" style={{ color: 'var(--primary)', fontWeight: 600, fontSize: 15 }}>Start Over</Link>
-        </div>
-      </div>
-    )
+    return <Navigate to="/setup" replace />
   }
 
-  const total = pricing.total + (deliveryCharge || 0)
+  const total = pricing.total - (pricing.deliveryCharge || 0) + (deliveryCharge ?? 0)
   const advanceAmt = Math.round(total * 0.5)
   const payAmt = payPlan === 'FULL' ? total : advanceAmt
 
@@ -74,6 +94,9 @@ export default function PaymentPlanPage() {
     if (deliveryMeta?.outOfRange) { toast.error('This location is outside our delivery range. Call +91 86 86 622 722'); return }
     if (!contact.name.trim()) { toast.error('Please enter your name'); return }
     if (!contact.phone.trim()) { toast.error('Please enter your phone number'); return }
+    const _phone = contact.phone.replace(/\s/g, '').replace(/^\+91/, '')
+    if (!/^[6-9]\d{9}$/.test(_phone)) { toast.error('Please enter a valid 10-digit mobile number'); return }
+    if (contact.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact.email.trim())) { toast.error('Please enter a valid email address'); return }
     setLoading(true)
     try {
       // 1. Save event details to store
@@ -136,13 +159,11 @@ export default function PaymentPlanPage() {
         },
         modal: {
           ondismiss: () => {
-            toast('Payment cancelled. Your booking slot is saved — our team will contact you.', { icon: 'ℹ️' })
-            resetBooking()
-            navigate(`/success?id=${bookingId}`)
+            setLoading(false)
+            toast('Payment cancelled. You can retry or choose "Cash / Call" instead.', { icon: 'ℹ️' })
           },
         },
       }
-      setLoading(false)
       const rzp = new window.Razorpay(options)
       rzp.open()
     } catch (err) {
@@ -158,6 +179,9 @@ export default function PaymentPlanPage() {
     if (deliveryMeta?.outOfRange) { toast.error('This location is outside our delivery range. Call +91 86 86 622 722'); return }
     if (!contact.name.trim()) { toast.error('Please enter your name'); return }
     if (!contact.phone.trim()) { toast.error('Please enter your phone number'); return }
+    const _phone = contact.phone.replace(/\s/g, '').replace(/^\+91/, '')
+    if (!/^[6-9]\d{9}$/.test(_phone)) { toast.error('Please enter a valid 10-digit mobile number'); return }
+    if (contact.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact.email.trim())) { toast.error('Please enter a valid email address'); return }
     setLoading(true)
     try {
       setEventDetails({ ...eventDetails, venueAddress: venue.trim(), venueLat, venueLng })
@@ -198,11 +222,12 @@ export default function PaymentPlanPage() {
 
           {/* ── LEFT COLUMN: Summary + Contact ── */}
           <div>
+            {/* Venue Address Section */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
               <p className="ios-section-header" style={{ marginTop: 0, marginBottom: 0 }}>Venue Address</p>
               {venueConfirmed && venue && (
                 <button
-                  onClick={() => setVenueConfirmed(false)}
+                  onClick={() => { setVenueConfirmed(false); setAddingNew(false) }}
                   style={{ fontSize: '0.78rem', color: 'var(--primary)', background: 'none', border: '1px solid var(--primary-light)', borderRadius: 6, padding: '4px 12px', cursor: 'pointer', fontWeight: 600 }}
                 >
                   <i className="fa-solid fa-pen" style={{ marginRight: 5 }} />Edit
@@ -210,38 +235,133 @@ export default function PaymentPlanPage() {
               )}
             </div>
             <div style={{ background: 'var(--bg)', borderRadius: 'var(--r-md)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)', marginBottom: 24, padding: '12px 18px' }}>
+
               {venueConfirmed && venue ? (
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '4px 0' }}>
                   <i className="fa-solid fa-map-pin" style={{ color: 'var(--primary)', marginTop: 2, flexShrink: 0 }} />
                   <span style={{ fontSize: 15, color: 'var(--heading)', lineHeight: 1.5 }}>{venue}</span>
                 </div>
+              ) : !authUser ? (
+                <div style={{ textAlign: 'center', padding: '16px 0' }}>
+                  <i className="fa-solid fa-user-lock" style={{ fontSize: 28, color: 'var(--muted)', marginBottom: 10, display: 'block' }} />
+                  <p style={{ fontSize: 14, color: 'var(--muted)', margin: '0 0 12px' }}>Log in to use saved addresses, or search your venue below</p>
+                  {!addingNew ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      <button
+                        onClick={() => { window.location.href = '/booking/login?redirect=/booking/payment' }}
+                        style={{ padding: '11px 0', background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, fontSize: 15, cursor: 'pointer' }}
+                      >
+                        Log in to continue
+                      </button>
+                      <button
+                        onClick={() => setAddingNew(true)}
+                        style={{ padding: '10px 0', background: 'transparent', color: 'var(--primary)', border: '1.5px solid var(--primary-light)', borderRadius: 10, fontWeight: 600, fontSize: 14, cursor: 'pointer' }}
+                      >
+                        Continue as guest
+                      </button>
+                    </div>
+                  ) : (
+                    <div>
+                      <button
+                        onClick={() => setAddingNew(false)}
+                        style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10, background: 'none', border: 'none', color: 'var(--primary)', fontWeight: 600, fontSize: 13, cursor: 'pointer', padding: '4px 0' }}
+                      >
+                        <i className="fa-solid fa-arrow-left" style={{ fontSize: 11 }} />
+                        Back
+                      </button>
+                      <AddressAutocomplete key={acKey}
+                        label="Delivery / Event Venue"
+                        required
+                        value={venue}
+                        placeholder="Search your venue address..."
+                        onSelect={async ({ address, lat, lng }) => {
+                          setVenue(address); setVenueLat(lat); setVenueLng(lng);
+                          const ok = await calcDelivery(lat, lng); if (ok) setVenueConfirmed(true);
+                        }}
+                        style={{ width: '100%', padding: '8px 0', fontFamily: 'var(--font)', fontSize: 15, background: 'transparent', border: 'none', outline: 'none', color: 'var(--heading)', boxSizing: 'border-box' }}
+                      />
+                    </div>
+                  )}
+                </div>
+              ) : savedAddresses.length > 0 && !addingNew ? (
+                <div>
+                  <p style={{ fontSize: 13, color: 'var(--muted)', margin: '0 0 10px', fontWeight: 500 }}>Recent addresses</p>
+                  {savedAddresses.map((addr, i) => (
+                    <button
+                      key={addr.id || i}
+                      onClick={async () => {
+                        setVenue(addr.address || addr);
+                        setVenueLat(addr.lat || null); setVenueLng(addr.lng || null);
+                        if (addr.lat && addr.lng) { const ok = await calcDelivery(addr.lat, addr.lng); if (ok) setVenueConfirmed(true) }
+                        else { setDeliveryCharge(0); setDeliveryMeta(null); setVenueConfirmed(true) }
+                      }}
+                      style={{
+                        display: 'flex', alignItems: 'flex-start', gap: 10, width: '100%',
+                        padding: '11px 12px', marginBottom: i < savedAddresses.length - 1 ? 6 : 0,
+                        background: 'var(--fill-tertiary)', border: '1.5px solid transparent',
+                        borderRadius: 10, cursor: 'pointer', textAlign: 'left',
+                      }}
+                    >
+                      <i className="fa-solid fa-clock-rotate-left" style={{ color: 'var(--muted)', marginTop: 2, flexShrink: 0, fontSize: 13 }} />
+                      <div>
+                        {(addr.label) && <p style={{ margin: '0 0 2px', fontSize: 13, fontWeight: 600, color: 'var(--heading)' }}>{addr.label}</p>}
+                        <span style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>{addr.address || addr}</span>
+                      </div>
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => setAddingNew(true)}
+                    style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, padding: '10px 12px', width: '100%', background: 'transparent', border: '1.5px dashed var(--primary-light)', borderRadius: 10, color: 'var(--primary)', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}
+                  >
+                    <i className="fa-solid fa-plus" style={{ fontSize: 12 }} />
+                    Use a different address
+                  </button>
+                </div>
               ) : (
-                <>
-                <AddressAutocomplete
-                  label="Delivery / Event Venue"
-                  required
-                  value={venue}
-                  placeholder="Search your venue address…"
-                  onSelect={({ address, lat, lng }) => {
-                    setVenue(address)
-                    setVenueLat(lat)
-                    setVenueLng(lng)
-                    calcDelivery(lat, lng)
-                    setVenueConfirmed(true)
-                  }}
-                  style={{
-                    width: '100%', padding: '8px 0', fontFamily: 'var(--font)', fontSize: 15,
-                    background: 'transparent', border: 'none', outline: 'none',
-                    color: 'var(--heading)', boxSizing: 'border-box',
-                  }}
-                />
-                </>
+                <div>
+                  {savedAddresses.length > 0 && (
+                    <button
+                      onClick={() => setAddingNew(false)}
+                      style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10, background: 'none', border: 'none', color: 'var(--primary)', fontWeight: 600, fontSize: 13, cursor: 'pointer', padding: '4px 0' }}
+                    >
+                      <i className="fa-solid fa-arrow-left" style={{ fontSize: 11 }} />
+                      Back to saved addresses
+                    </button>
+                  )}
+                  <AddressAutocomplete key={acKey}
+                    label="Delivery / Event Venue"
+                    required
+                    value={venue}
+                    placeholder="Search your venue address..."
+                    onSelect={async ({ address, lat, lng }) => {
+                      setVenue(address); setVenueLat(lat); setVenueLng(lng);
+                      const ok = await calcDelivery(lat, lng); if (ok) setVenueConfirmed(true);
+                    }}
+                    style={{ width: '100%', padding: '8px 0', fontFamily: 'var(--font)', fontSize: 15, background: 'transparent', border: 'none', outline: 'none', color: 'var(--heading)', boxSizing: 'border-box' }}
+                  />
+                </div>
               )}
-              {calcingDelivery && <p style={{ fontSize: 12, color: 'var(--muted)', margin: '4px 0 0' }}>Calculating delivery charge…</p>}
+
+              {calcingDelivery && <p style={{ fontSize: 12, color: 'var(--muted)', margin: '4px 0 0' }}>Calculating delivery charge...</p>}
               {!calcingDelivery && deliveryMeta?.outOfRange && (
-                <div style={{ margin: '6px 0 0', padding: '10px 14px', background: 'rgba(244,67,54,0.08)', borderRadius: 8, border: '0.5px solid rgba(244,67,54,0.3)' }}>
-                  <p style={{ fontSize: 13, color: '#f44336', fontWeight: 600, margin: '0 0 4px' }}>Outside delivery range (&gt;30km)</p>
-                  <p style={{ fontSize: 12, color: 'var(--muted)', margin: 0 }}>Call us to arrange: <a href="tel:+918686622722" style={{ color: 'var(--primary)', fontWeight: 600 }}>+91 86 86 622 722</a></p>
+                <div style={{ margin: '10px 0 0', padding: '16px', background: 'rgba(244,67,54,0.07)', borderRadius: 12, border: '1.5px solid rgba(244,67,54,0.25)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                    <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(244,67,54,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f44336" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    </div>
+                    <div>
+                      <p style={{ fontSize: 15, fontWeight: 700, color: '#d32f2f', margin: 0 }}>Not Serviceable</p>
+                      <p style={{ fontSize: 12, color: 'var(--muted)', margin: '2px 0 0' }}>This location is outside our Visakhapatnam delivery area</p>
+                    </div>
+                  </div>
+                  <div style={{ background: 'rgba(244,67,54,0.06)', borderRadius: 8, padding: '10px 12px' }}>
+                    <p style={{ fontSize: 12.5, color: '#c62828', fontWeight: 500, margin: '0 0 6px' }}>We currently serve within 30 km of Visakhapatnam city centre.</p>
+                    <p style={{ fontSize: 12, color: 'var(--muted)', margin: 0 }}>For outstation events, call us directly:</p>
+                    <a href="tel:+918686622722" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 6, color: '#d32f2f', fontWeight: 700, fontSize: 13.5, textDecoration: 'none' }}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8a2 2 0 012-2.18h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 13a16 16 0 006.29 6.29l.61-1.09a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+                      +91 86 86 622 722
+                    </a>
+                  </div>
                 </div>
               )}
               {!calcingDelivery && !deliveryMeta?.outOfRange && deliveryCharge > 0 && (
@@ -528,10 +648,10 @@ export default function PaymentPlanPage() {
 
             <button
               onClick={paymentMethod === 'ONLINE' ? handleConfirm : handleOfflineBooking}
-              disabled={loading}
+              disabled={loading || !venueConfirmed || calcingDelivery || !!deliveryMeta?.outOfRange}
               style={{
                 width: '100%', padding: '17px', borderRadius: 'var(--r-pill)',
-                background: loading ? 'var(--primary-light)' : 'var(--primary)',
+                background: loading || deliveryMeta?.outOfRange ? 'var(--primary-light)' : 'var(--primary)',
                 border: 'none', color: '#fff', fontWeight: 600, fontSize: 17,
                 cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'var(--font)',
                 boxShadow: loading ? 'none' : 'var(--shadow-green)',
@@ -544,6 +664,8 @@ export default function PaymentPlanPage() {
                   <div style={{ width: 20, height: 20, border: '2px solid rgba(255,255,255,0.4)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
                   Processing...
                 </>
+              ) : deliveryMeta?.outOfRange ? (
+                <><i className="fa-solid fa-ban" style={{ marginRight: 8 }} />Not Serviceable — Call +91 86 86 622 722</>
               ) : (
                 paymentMethod === 'ONLINE'
                   ? `Pay ₹${payAmt.toLocaleString('en-IN')} Securely →`

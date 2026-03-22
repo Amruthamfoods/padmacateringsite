@@ -873,7 +873,7 @@ router.get('/pricing/settings', async (req, res) => {
 // PUT /api/admin/pricing/settings
 router.put('/pricing/settings', async (req, res) => {
   try {
-    const fields = ['packingCostPercent','mealboxDelivery','packedFoodDelivery','cateringDelivery','serviceChargeFlat','serviceChargeFreeAbove']
+    const fields = ['packingCostPercent','packingChargeFixed','mealboxDelivery','packedFoodDelivery','cateringDelivery','serviceChargeFlat','serviceChargeFreeAbove','minAdvanceHours','gstPercent']
     const data = {}
     fields.forEach(f => { if (req.body[f] !== undefined) data[f] = Number(req.body[f]) })
     const s = await prisma.pricingSettings.upsert({ where: { id: 1 }, update: data, create: { id: 1, ...data } })

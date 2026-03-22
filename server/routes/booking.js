@@ -18,6 +18,19 @@ const _gst = parseFloat(process.env.GST_RATE || 0.05)
 const GST_RATE = _gst > 1 ? _gst / 100 : _gst
 
 // POST /api/booking - Create a new booking
+router.get('/my-addresses', authMiddleware, async (req, res) => {
+  try {
+    const addresses = await prisma.userAddress.findMany({
+      where: { userId: req.user.id },
+      orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
+      select: { id: true, label: true, address: true, lat: true, lng: true, isDefault: true },
+    })
+    res.json(addresses)
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch addresses' })
+  }
+})
+
 router.post('/', validate('createBooking'), async (req, res) => {
   try {
     const {
@@ -29,6 +42,16 @@ router.post('/', validate('createBooking'), async (req, res) => {
       guestName, guestEmail, guestPhone, packageId,
       pricePerPerson: explicitPricePerPerson,
     } = req.body
+
+    // Enforce advance booking rule from settings
+    const bookingSettings = await prisma.pricingSettings.findUnique({ where: { id: 1 } })
+    const minAdvanceHours = bookingSettings?.minAdvanceHours ?? 48
+    const minEventDate = new Date(Date.now() + minAdvanceHours * 60 * 60 * 1000)
+    minEventDate.setHours(0, 0, 0, 0)
+    const reqDate = new Date(eventDate)
+    if (reqDate < minEventDate) {
+      return res.status(400).json({ error: `Bookings must be made at least ${minAdvanceHours} hours in advance.` })
+    }
 
     // Fetch selected items
     const items = await prisma.menuItem.findMany({

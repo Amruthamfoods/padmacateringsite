@@ -4,3 +4,11 @@ server/node_modules/
 server/.env
 .env
 .claude/
+
+# Logs
+server/logs/
+server/server_startup.log
+
+# One-off scripts
+server/seed_item_prices.js
+server/seed_item_prices2.js

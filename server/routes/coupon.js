@@ -53,4 +53,19 @@ router.post('/validate', validate('validateCoupon'), async (req, res) => {
   }
 })
 
+// GET /api/coupon/active - Public: active non-expired coupons for announcement bar
+router.get('/active', async (req, res) => {
+  try {
+    const now = new Date()
+    const coupons = await prisma.coupon.findMany({
+      where: { active: true, OR: [{ expiryDate: null }, { expiryDate: { gt: now } }] },
+      select: { code: true, discountType: true, value: true, minOrderValue: true },
+      orderBy: { id: 'desc' },
+    })
+    res.json(coupons)
+  } catch (err) {
+    res.status(500).json([])
+  }
+})
+
 module.exports = router

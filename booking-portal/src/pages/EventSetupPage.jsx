@@ -42,6 +42,11 @@ const DAY_SHORT = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
 const MONTHS_FULL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
 const CAT_COLORS = { BOX: 'var(--primary)', BULK: '#FF9500', CATERING: '#007AFF' }
+const BADGE_STYLES = {
+  popular:         { label: '⭐ Popular',        bg: '#FF9500', color: '#fff' },
+  'value-for-money': { label: '💰 Best Value',      bg: '#34C759', color: '#fff' },
+  new:             { label: '✨ New',            bg: '#007AFF', color: '#fff' },
+}
 const CAT_LABELS = { BOX: 'Meal Box', BULK: 'Delivery Box', CATERING: 'Catering' }
 const PKG_IMAGES = [
   'https://images.unsplash.com/photo-1596797038530-2c107229654b?w=400&h=280&fit=crop&q=80',
@@ -61,6 +66,8 @@ function get90Days() {
 }
 function toDateStr(d) { return d.toISOString().split('T')[0] }
 const TODAY = toDateStr(new Date())
+function getMinDate(hours) { return toDateStr(new Date(Date.now() + hours * 60 * 60 * 1000)) }
+const MIN_DATE = getMinDate(48) // default until settings loaded
 
 export default function EventSetupPage() {
   const navigate = useNavigate()
@@ -74,10 +81,12 @@ export default function EventSetupPage() {
 
   const [packages, setPackages] = useState([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [category, setCategory] = useState(wizPkgType)
   const [eventType, setEventType] = useState('ALL')
   const [mealTab, setMealTab] = useState('All')
-  const [selectedDay, setSelectedDay] = useState(eventDetails.eventDate || TODAY)
+  const [minAdvanceHours, setMinAdvanceHours] = useState(48)
+  const [selectedDay, setSelectedDay] = useState(eventDetails.eventDate || MIN_DATE)
   const [guestCount, setGuestCount] = useState(eventDetails.guestCount || 25)
   const [guestEditing, setGuestEditing] = useState(false)
   const [guestInput, setGuestInput] = useState('')
@@ -101,10 +110,25 @@ export default function EventSetupPage() {
     return acc
   }, [])
 
+  // Fetch public settings for min advance hours
   useEffect(() => {
+    api.get('/api/settings/public')
+      .then(r => {
+        const hrs = r.data?.minAdvanceHours ?? 48
+        setMinAdvanceHours(hrs)
+        setSelectedDay(prev => {
+          const minD = getMinDate(hrs)
+          return prev < minD ? minD : prev
+        })
+      })
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    setLoadError(false)
     api.get('/menu/packages')
       .then(r => setPackages(r.data))
-      .catch(() => toast.error('Failed to load packages'))
+      .catch(() => { toast.error('Failed to load packages'); setLoadError(true) })
       .finally(() => setLoading(false))
   }, [])
 
@@ -321,7 +345,7 @@ export default function EventSetupPage() {
                     ref={calInputRef}
                     type="date"
                     value={selectedDay}
-                    min={TODAY}
+                    min={MIN_DATE}
                     onChange={e => e.target.value && setSelectedDay(e.target.value)}
                     style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: 1, height: 1 }}
                   />
@@ -339,7 +363,7 @@ export default function EventSetupPage() {
                           const ds = toDateStr(d)
                           const isSel = ds === selectedDay
                           const isToday = ds === TODAY
-                          const isPast = ds < TODAY
+                          const isPast = ds < MIN_DATE
                           return (
                             <button
                               key={ds}
@@ -472,6 +496,13 @@ export default function EventSetupPage() {
                 <div style={{ width: 36, height: 36, border: '2.5px solid var(--primary)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
                 <p style={{ color: 'var(--muted)', fontSize: 14 }}>Loading packages...</p>
               </div>
+            ) : loadError ? (
+              <div style={{ textAlign: 'center', padding: '60px 20px', background: 'var(--bg)', borderRadius: 16, border: '1px solid var(--separator-nm)' }}>
+                <p style={{ fontWeight: 600, fontSize: 16, color: 'var(--heading)', marginBottom: 8 }}>Failed to load packages</p>
+                <p style={{ color: 'var(--muted)', fontSize: 14, marginBottom: 16 }}>Check your connection and try again.</p>
+                <button onClick={() => { setLoading(true); setLoadError(false); api.get('/menu/packages').then(r => setPackages(r.data)).catch(() => { toast.error('Failed to load packages'); setLoadError(true) }).finally(() => setLoading(false)) }}
+                  style={{ padding: '9px 24px', borderRadius: 999, background: 'var(--primary)', border: 'none', color: '#fff', fontWeight: 600, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}>Try Again</button>
+              </div>
             ) : filteredPkgs.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '60px 20px', background: 'var(--bg)', borderRadius: 16, border: '1px solid var(--separator-nm)' }}>
                 <div style={{ fontSize: 40, marginBottom: 12 }}>🍽️</div>
@@ -486,8 +517,8 @@ export default function EventSetupPage() {
               <div className="setup-pkgs-grid">
                 {filteredPkgs.map((pkg, idx) => {
                   const pkgCat = (pkg.eventType || '').split(':')[0]
-                  const tier = pkg.pricingTiers?.slice().sort((a, b) => a.minGuests - b.minGuests)
-                    .find(t => guestCount >= t.minGuests && (t.maxGuests == null || guestCount <= t.maxGuests))
+                  const tier = pkg.pricingTiers?.slice().sort((a, b) => b.minGuests - a.minGuests)
+                    .find(t => guestCount >= t.minGuests)
                     || pkg.pricingTiers?.[0]
                   const img = pkg.items?.find(pi => pi.menuItem?.image)?.menuItem?.image
                   const accentColor = CAT_COLORS[pkgCat] || 'var(--primary)'
@@ -511,6 +542,11 @@ export default function EventSetupPage() {
                         <img src={img || PKG_IMAGES[idx % PKG_IMAGES.length]} alt={pkg.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         {/* Veg dot */}
                         <span style={{ position: 'absolute', top: 9, right: 9, width: 10, height: 10, borderRadius: '50%', background: pkg.type === 'VEG' ? '#34C759' : '#FF3B30', border: '2px solid #fff' }} />
+                        {pkg.badge && BADGE_STYLES[pkg.badge] && (
+                          <span style={{ position: 'absolute', top: 9, left: 9, background: BADGE_STYLES[pkg.badge].bg, color: BADGE_STYLES[pkg.badge].color, fontSize: 9.5, fontWeight: 700, padding: '2px 7px', borderRadius: 999 }}>
+                            {BADGE_STYLES[pkg.badge].label}
+                          </span>
+                        )}
                         {/* Category badge */}
                         <span style={{ position: 'absolute', bottom: 8, left: 8, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(6px)', color: '#fff', fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 999 }}>
                           {CAT_LABELS[pkgCat] || 'Package'}
@@ -590,7 +626,7 @@ function PackageModal({ pkg, selectedDay, guestCount, onClose, onConfirm }) {
   const [guestInput, setGuestInput] = useState('')
   const [vegGuests, setVegGuests] = useState(0)
   const isNonVeg = pkg.type !== 'VEG'
-  const todayStr = new Date().toISOString().split('T')[0]
+  const minStr = new Date(Date.now() + 48*60*60*1000).toISOString().split('T')[0]
   const pkgCat = (pkg.eventType || '').split(':')[0]
   const accentColor = CAT_COLORS[pkgCat] || 'var(--primary)'
 
@@ -638,6 +674,11 @@ function PackageModal({ pkg, selectedDay, guestCount, onClose, onConfirm }) {
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                 <h3 style={{ fontWeight: 700, fontSize: 17, color: 'var(--heading)', margin: 0, letterSpacing: -0.3, lineHeight: 1.2 }}>{pkg.name}</h3>
+                {pkg.badge && BADGE_STYLES[pkg.badge] && (
+                  <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 9px', borderRadius: 999, background: BADGE_STYLES[pkg.badge].bg, color: BADGE_STYLES[pkg.badge].color, flexShrink: 0 }}>
+                    {BADGE_STYLES[pkg.badge].label}
+                  </span>
+                )}
                 <span style={{ fontSize: 11, fontWeight: 600, color: accentColor, background: `${accentColor}18`, padding: '2px 8px', borderRadius: 999 }}>
                   {CAT_LABELS[pkgCat] || 'Package'}
                 </span>
@@ -681,7 +722,7 @@ function PackageModal({ pkg, selectedDay, guestCount, onClose, onConfirm }) {
           <div style={{ background: 'var(--fill-tertiary)', borderRadius: 12, overflow: 'hidden', marginBottom: 14 }}>
             <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--separator-nm)' }}>
               <p style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 7 }}>Event Date</p>
-              <input type="date" value={eventDate} min={todayStr} onChange={e => setEventDate(e.target.value)} style={inputStyle} />
+              <input type="date" value={eventDate} min={minStr} onChange={e => setEventDate(e.target.value)} style={inputStyle} />
             </div>
             <div style={{ padding: '12px 14px' }}>
               <p style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 7 }}>Time Slot</p>
@@ -740,8 +781,8 @@ function PackageModal({ pkg, selectedDay, guestCount, onClose, onConfirm }) {
             onClick={() => {
               if (!eventDate) { toast.error('Please select an event date'); return }
               if (!timeSlot) { toast.error('Please select a time slot'); return }
-              const vc = isNonVeg ? vegGuests : localGuests
-              const nvc = isNonVeg ? localGuests - vegGuests : 0
+              const vc = isNonVeg ? Math.min(vegGuests, localGuests) : localGuests
+              const nvc = isNonVeg ? Math.max(0, localGuests - vc) : 0
               onConfirm(eventDate, timeSlot, localGuests, vc, nvc)
             }}
             style={{ width: '100%', padding: '16px', borderRadius: 999, background: 'var(--heading)', border: 'none', color: '#fff', fontWeight: 700, fontSize: 16, cursor: 'pointer', fontFamily: 'inherit', marginBottom: 28, letterSpacing: -0.2 }}

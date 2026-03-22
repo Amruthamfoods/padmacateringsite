@@ -62,6 +62,9 @@ export default function RewardsPage() {
           <p style={{ margin: '0 0 4px', fontSize: 13, opacity: 0.8 }}>Your Points</p>
           <p style={{ margin: '0 0 4px', fontSize: 52, fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1 }}>{points.toLocaleString('en-IN')}</p>
           <p style={{ margin: '0 0 4px', fontSize: 13, opacity: 0.7 }}>from ₹{totalSpend.toLocaleString('en-IN')} total spend</p>
+          {userData?.referralCode && (
+            <p style={{ margin: '8px 0 0', fontSize: 12, opacity: 0.8 }}>Referral Code: <strong>{userData.referralCode}</strong></p>
+          )}
           <p style={{ margin: '0 0 14px', fontSize: 15, fontWeight: 700, opacity: 0.95 }}>Worth ₹{(points * POINT_VALUE).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
           <span style={{
             display: 'inline-block', padding: '5px 16px', borderRadius: 20,
@@ -144,7 +147,7 @@ export default function RewardsPage() {
         <div style={{ textAlign: 'center', padding: '14px', background: 'var(--primary-bg)', borderRadius: 12, border: '1px solid var(--primary-light)' }}>
           <p style={{ margin: 0, fontSize: 14, color: 'var(--primary)', fontWeight: 600 }}>
             <i className="fa-solid fa-calendar-check" style={{ marginRight: 6 }} />
-            {completedBookings.length} completed booking{completedBookings.length !== 1 ? 's' : ''} · {points} pts earned
+            {completedBookings.length} completed booking{completedBookings.length !== 1 ? 's' : ''} · ₹{totalSpend.toLocaleString('en-IN')} total spend
           </p>
         </div>
 

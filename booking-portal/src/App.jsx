@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Toaster } from 'react-hot-toast'
 import useAuthStore from './store/authStore'
 import { useCartStore } from './store/useCartStore'
+import { useBookingStore } from './store/useBookingStore'
 import api from './lib/api'
 
 import LandingPage from './pages/LandingPage'
@@ -132,6 +133,7 @@ function AnnouncementBar() {
 function WebNav({ onBookNow }) {
   const navigate = useNavigate()
   const { user, logout: storeLogout } = useAuthStore()
+  const resetBooking = useBookingStore(s => s.resetBooking)
   const [open, setOpen] = useState(false)
   const [mobileMenu, setMobileMenu] = useState(false)
   const dropRef = useRef(null)
@@ -148,6 +150,7 @@ function WebNav({ onBookNow }) {
 
   function logout() {
     storeLogout()
+    resetBooking()
     setOpen(false)
     setMobileMenu(false)
     navigate('/login')
