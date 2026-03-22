@@ -32,9 +32,10 @@ export default function SettingsPage() {
 
   // ── Pricing ──
   const [pricingForm, setPricingForm] = useState({
-    packingCostPercent: 5, packingChargeFixed: 10.9,
+    packingChargeFixed: 10.9,
     mealboxDelivery: 500, packedFoodDelivery: 500, cateringDelivery: 1500,
     serviceChargeFlat: 1500, serviceChargeFreeAbove: 100,
+    freeDeliveryAbove: 0,
   })
   const [pricingSaving, setPricingSaving] = useState(false)
 
@@ -66,13 +67,13 @@ export default function SettingsPage() {
         }))
         setPricingForm(f => ({
           ...f,
-          packingCostPercent: r.data.packingCostPercent ?? 5,
           packingChargeFixed: r.data.packingChargeFixed ?? 10.9,
           mealboxDelivery: r.data.mealboxDelivery ?? 500,
           packedFoodDelivery: r.data.packedFoodDelivery ?? 500,
           cateringDelivery: r.data.cateringDelivery ?? 1500,
           serviceChargeFlat: r.data.serviceChargeFlat ?? 1500,
           serviceChargeFreeAbove: r.data.serviceChargeFreeAbove ?? 100,
+          freeDeliveryAbove: r.data.freeDeliveryAbove ?? 0,
         }))
       })
       .catch(() => {})
@@ -300,11 +301,11 @@ export default function SettingsPage() {
             </p>
           </div>
           <div style={{ padding: '4px 24px 24px' }}>
-            <NumField label="Packing Cost %" value={pricingForm.packingCostPercent} onChange={v => setPricingForm(f => ({ ...f, packingCostPercent: v }))} min={0} max={50} step={0.5} suffix="%" />
-            <NumField label="Packing Charge Fixed" value={pricingForm.packingChargeFixed} onChange={v => setPricingForm(f => ({ ...f, packingChargeFixed: v }))} min={0} step={0.1} suffix="₹" />
+            <NumField label="Packing Charge (per person)" value={pricingForm.packingChargeFixed} onChange={v => setPricingForm(f => ({ ...f, packingChargeFixed: v }))} min={0} step={0.5} suffix="₹/plate" />
             <NumField label="Mealbox Delivery Charge" value={pricingForm.mealboxDelivery} onChange={v => setPricingForm(f => ({ ...f, mealboxDelivery: v }))} min={0} suffix="₹" />
             <NumField label="Packed Food Delivery Charge" value={pricingForm.packedFoodDelivery} onChange={v => setPricingForm(f => ({ ...f, packedFoodDelivery: v }))} min={0} suffix="₹" />
             <NumField label="Catering Delivery Charge" value={pricingForm.cateringDelivery} onChange={v => setPricingForm(f => ({ ...f, cateringDelivery: v }))} min={0} suffix="₹" />
+            <NumField label="Free Delivery Above (0 = disabled)" value={pricingForm.freeDeliveryAbove} onChange={v => setPricingForm(f => ({ ...f, freeDeliveryAbove: v }))} min={0} suffix="₹ order value" />
             <NumField label="Service Charge (Flat)" value={pricingForm.serviceChargeFlat} onChange={v => setPricingForm(f => ({ ...f, serviceChargeFlat: v }))} min={0} suffix="₹" />
             <NumField label="Service Charge Free Above (Guests)" value={pricingForm.serviceChargeFreeAbove} onChange={v => setPricingForm(f => ({ ...f, serviceChargeFreeAbove: v }))} min={0} suffix="pax" />
             <button onClick={savePricing} disabled={pricingSaving} className="btn btn-primary" style={{ fontSize: '0.85rem', padding: '9px 20px', marginTop: 8 }}>

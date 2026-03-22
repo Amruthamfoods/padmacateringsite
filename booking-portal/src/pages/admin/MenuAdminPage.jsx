@@ -294,7 +294,7 @@ function PackageModal({ pkg, onSave, onClose }) {
         <div className="field-block" style={{ marginTop: 12 }}>
           <label className="field-label">Service Type</label>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 4 }}>
-            {['Meal Box', 'Delivery', 'Catering'].map(svc => {
+            {[{ key: 'Meal Box', label: '🍱 Meal Box' }, { key: 'Delivery', label: '📦 Delivery Box' }, { key: 'Catering', label: '🍛 Full Catering' }].map(({ key: svc, label }) => {
               const selected = (form.serviceType || '').split(',').map(s => s.trim()).filter(Boolean)
               const checked = selected.includes(svc)
               return (
@@ -306,7 +306,7 @@ function PackageModal({ pkg, onSave, onClose }) {
                     }}
                     style={{ accentColor: 'var(--gold)' }}
                   />
-                  {svc}
+                  {label}
                 </label>
               )
             })}

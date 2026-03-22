@@ -7,10 +7,10 @@ import { useBookingStore } from '../store/useBookingStore'
 import { useCartStore } from '../store/useCartStore'
 
 const CATEGORIES = [
-  { key: 'ALL', label: 'All' },
-  { key: 'BOX', label: 'Meal Box' },
-  { key: 'BULK', label: 'Bulk' },
-  { key: 'CATERING', label: 'Catering' },
+  { key: 'ALL',      label: 'All' },
+  { key: 'BOX',      label: '🍱 Meal Box' },
+  { key: 'BULK',     label: '📦 Delivery Box' },
+  { key: 'CATERING', label: '🍛 Full Catering' },
 ]
 
 const EVENT_TYPES = [
@@ -157,15 +157,23 @@ export default function EventSetupPage() {
     setGuestEditing(false)
   }
 
+  // Map wizard keys → possible serviceType strings stored in DB
+  const SERVICE_TYPE_MATCH = {
+    BOX:      ['BOX', 'Meal Box', 'MealBox', 'Mealbox'],
+    BULK:     ['BULK', 'Delivery', 'PackedFood', 'Packed Food', 'Delivery Box'],
+    CATERING: ['CATERING', 'Catering', 'Full Catering'],
+  }
+
   const filteredPkgs = packages.filter(pkg => {
     if (search && !pkg.name.toLowerCase().includes(search.toLowerCase())) return false
     if (category !== 'ALL') {
-      if ((pkg.eventType || '').split(':')[0] !== category) return false
+      const st = (pkg.serviceType || '').toLowerCase()
+      const keys = SERVICE_TYPE_MATCH[category] || [category]
+      if (!keys.some(k => st.includes(k.toLowerCase()))) return false
     }
     if (eventType !== 'ALL') {
-      const raw = pkg.eventType || ''
-      const evtPart = raw.includes(':') ? raw.split(':')[1] : raw
-      if (evtPart !== eventType) return false
+      const evtStr = (pkg.eventType || '').toLowerCase()
+      if (!evtStr.includes(eventType.toLowerCase())) return false
     }
     if (mealTab !== 'All' && pkg.mealTypes && !pkg.mealTypes.includes(mealTab)) return false
     // Diet filter from wizard

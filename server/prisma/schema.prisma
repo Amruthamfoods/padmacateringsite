@@ -340,6 +340,8 @@ model Coupon {
 enum DiscountType {
   FLAT
   PERCENTAGE
+  FREE_DELIVERY
+  FREE_PACKING
 }
 
 model BlockedDate {
@@ -404,6 +406,7 @@ model PricingSettings {
   cateringDelivery       Float @default(1500)
   serviceChargeFlat      Float @default(1500)
   serviceChargeFreeAbove Int   @default(100)
+  freeDeliveryAbove      Float @default(0)
   minAdvanceHours        Int   @default(48)
   gstPercent             Float @default(18)
 }

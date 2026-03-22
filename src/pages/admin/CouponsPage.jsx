@@ -5,6 +5,17 @@ import api from '../../lib/api'
 
 const empty = { code: '', discountType: 'FLAT', value: '', minOrderValue: '0', expiryDate: '', usageLimit: '', active: true }
 
+const TYPE_LABELS = {
+  FLAT: 'Flat (₹)',
+  PERCENTAGE: 'Percentage (%)',
+  FREE_DELIVERY: 'Free Delivery',
+  FREE_PACKING: 'Free Packing',
+}
+
+function typeLabel(type) {
+  return TYPE_LABELS[type] || type
+}
+
 function genCode() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
   return Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
@@ -26,8 +37,11 @@ export default function CouponsPage() {
   function openAdd() { setForm(empty); setModal('add') }
   function openEdit(c) { setForm({ ...c, expiryDate: c.expiryDate ? c.expiryDate.split('T')[0] : '', usageLimit: c.usageLimit || '' }); setModal(c) }
 
+  const noValue = form.discountType === 'FREE_DELIVERY' || form.discountType === 'FREE_PACKING'
+
   async function handleSave() {
-    if (!form.code || !form.value) { toast.error('Code and value required'); return }
+    if (!form.code) { toast.error('Coupon code required'); return }
+    if (!noValue && !form.value) { toast.error('Value required'); return }
     setSaving(true)
     try {
       if (modal === 'add') await api.post('/admin/coupons', form)
@@ -80,8 +94,12 @@ export default function CouponsPage() {
                 {coupons.map(c => (
                   <tr key={c.id}>
                     <td style={{ fontFamily: 'var(--font-display)', color: 'var(--gold)', fontWeight: 600 }}>{c.code}</td>
-                    <td style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{c.discountType}</td>
-                    <td style={{ color: 'var(--white)' }}>{c.discountType === 'PERCENTAGE' ? `${c.value}%` : `₹${c.value}`}</td>
+                    <td style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{typeLabel(c.discountType)}</td>
+                    <td style={{ color: 'var(--white)' }}>
+                      {c.discountType === 'PERCENTAGE' ? `${c.value}%`
+                        : c.discountType === 'FREE_DELIVERY' || c.discountType === 'FREE_PACKING' ? '—'
+                        : `₹${c.value}`}
+                    </td>
                     <td style={{ color: 'var(--text-muted)' }}>₹{c.minOrderValue}</td>
                     <td style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>{c.expiryDate ? format(new Date(c.expiryDate), 'dd MMM yyyy') : '—'}</td>
                     <td style={{ color: 'var(--text-muted)' }}>{c.usedCount}{c.usageLimit ? `/${c.usageLimit}` : ''}</td>
@@ -125,15 +143,16 @@ export default function CouponsPage() {
             <div className="form-row-2">
               <div className="field-block" style={{ marginBottom: 0 }}>
                 <label className="field-label">Discount Type</label>
-                <select value={form.discountType} onChange={e => setForm(f => ({ ...f, discountType: e.target.value }))} className="booking-input">
-                  <option value="FLAT">Flat (₹)</option>
-                  <option value="PERCENTAGE">Percentage (%)</option>
+                <select value={form.discountType} onChange={e => setForm(f => ({ ...f, discountType: e.target.value, value: '' }))} className="booking-input">
+                  {Object.entries(TYPE_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                 </select>
               </div>
-              <div className="field-block" style={{ marginBottom: 0 }}>
-                <label className="field-label">Value *</label>
-                <input type="number" value={form.value} onChange={e => setForm(f => ({ ...f, value: e.target.value }))} className="booking-input" />
-              </div>
+              {!noValue && (
+                <div className="field-block" style={{ marginBottom: 0 }}>
+                  <label className="field-label">Value *</label>
+                  <input type="number" value={form.value} onChange={e => setForm(f => ({ ...f, value: e.target.value }))} className="booking-input" />
+                </div>
+              )}
             </div>
 
             {[

@@ -2,12 +2,129 @@ const router = require('express').Router()
 const multer = require('multer')
 const { PrismaClient } = require('@prisma/client')
 const xlsx = require('xlsx')
+const nodemailer = require('nodemailer')
 const authMiddleware = require('../middleware/auth')
 const adminOnly = require('../middleware/adminOnly')
 const path = require('path')
 const fs = require('fs')
 
 const prisma = new PrismaClient()
+
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_PASS },
+})
+
+function bookingDetailsHtml(b) {
+  const date = new Date(b.eventDate).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+  const menuRows = (b.menuItems || []).map(mi =>
+    `<tr><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;">${mi.menuItem?.name || '—'}</td><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;text-align:right;">₹${(mi.menuItem?.price || 0).toFixed(2)}</td></tr>`
+  ).join('')
+
+  const rows = [
+    ['Event Type', b.eventType],
+    ['Event Date', date],
+    ['Time Slot', b.timeSlot || '—'],
+    ['Guests', b.guestCount],
+    ['Venue', b.venueAddress || '—'],
+    ['Serving Style', b.servingStyle],
+    ['Diet Preference', b.dietPreference],
+    ['Spice Level', b.spiceLevel],
+    ['Payment Plan', b.paymentPlan],
+  ].map(([k, v]) =>
+    `<tr><td style="padding:8px 12px;font-weight:600;color:#555;border-bottom:1px solid #f0f0f0;width:40%;">${k}</td><td style="padding:8px 12px;border-bottom:1px solid #f0f0f0;">${v}</td></tr>`
+  ).join('')
+
+  const pricingRows = [
+    ['Base Total', b.baseTotal],
+    b.deliveryCharge > 0 ? ['Delivery Charge', b.deliveryCharge] : null,
+    b.staffCharge > 0 ? ['Staff Charge', b.staffCharge] : null,
+    b.addonCharge > 0 ? ['Add-on Charge', b.addonCharge] : null,
+    b.discount > 0 ? ['Discount', -b.discount] : null,
+    b.gst > 0 ? ['GST', b.gst] : null,
+    b.coinsRedeemed > 0 ? [`Coins Redeemed (${b.coinsRedeemed} pts)`, -b.cashback] : null,
+  ].filter(Boolean).map(([k, v]) =>
+    `<tr><td style="padding:6px 12px;color:#555;">${k}</td><td style="padding:6px 12px;text-align:right;">${v < 0 ? '-' : ''}₹${Math.abs(v).toFixed(2)}</td></tr>`
+  ).join('')
+
+  return `
+    <div style="font-family:Arial,sans-serif;max-width:620px;margin:0 auto;padding:0;background:#fff;">
+      <div style="background:#8B0000;padding:24px 28px;">
+        <h1 style="margin:0;color:#fff;font-size:22px;">Padma Catering</h1>
+        <p style="margin:4px 0 0;color:#ffcccc;font-size:13px;">Visakhapatnam</p>
+      </div>
+      <div style="padding:24px 28px;">
+        <p style="margin:0 0 16px;font-size:15px;color:#333;">Hi <strong>${b.guestName}</strong>,</p>
+
+        <h3 style="margin:0 0 12px;color:#333;font-size:15px;border-bottom:2px solid #f0f0f0;padding-bottom:8px;">Booking Details — #${b.id}</h3>
+        <table style="width:100%;border-collapse:collapse;margin-bottom:20px;font-size:14px;">${rows}</table>
+
+        ${menuRows ? `
+        <h3 style="margin:0 0 12px;color:#333;font-size:15px;border-bottom:2px solid #f0f0f0;padding-bottom:8px;">Menu Items</h3>
+        <table style="width:100%;border-collapse:collapse;margin-bottom:20px;font-size:14px;">
+          <thead><tr style="background:#f9f9f9;"><th style="padding:8px 12px;text-align:left;">Item</th><th style="padding:8px 12px;text-align:right;">Price/plate</th></tr></thead>
+          <tbody>${menuRows}</tbody>
+        </table>` : ''}
+
+        <h3 style="margin:0 0 12px;color:#333;font-size:15px;border-bottom:2px solid #f0f0f0;padding-bottom:8px;">Pricing Summary</h3>
+        <table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:20px;">
+          ${pricingRows}
+          <tr style="background:#8B0000;color:#fff;font-weight:bold;">
+            <td style="padding:10px 12px;">Total</td>
+            <td style="padding:10px 12px;text-align:right;">₹${b.total.toFixed(2)}</td>
+          </tr>
+        </table>
+
+        <p style="font-size:13px;color:#666;margin-top:24px;">For any queries:<br>📞 +91 86 86 622 722 &nbsp;|&nbsp; +91 98 49 915 468</p>
+        <p style="font-size:12px;color:#999;margin-top:8px;">— Padma Catering Team, Visakhapatnam</p>
+      </div>
+    </div>`
+}
+
+const STATUS_EMAIL = {
+  CONFIRMED: {
+    subject: (b) => `Booking #${b.id} Confirmed ✅ — Padma Catering`,
+    html: (b) => `
+      <div style="font-family:Arial,sans-serif;max-width:620px;margin:0 auto;">
+        <div style="background:#2e7d32;padding:16px 28px;">
+          <h2 style="margin:0;color:#fff;font-size:18px;">Your Booking is Confirmed! ✅</h2>
+        </div>
+        ${bookingDetailsHtml(b)}
+      </div>`,
+  },
+  CANCELLED: {
+    subject: (b) => `Booking #${b.id} Cancelled — Padma Catering`,
+    html: (b) => `
+      <div style="font-family:Arial,sans-serif;max-width:620px;margin:0 auto;">
+        <div style="background:#c62828;padding:16px 28px;">
+          <h2 style="margin:0;color:#fff;font-size:18px;">Booking Cancelled</h2>
+        </div>
+        <div style="padding:24px 28px;font-family:Arial,sans-serif;font-size:14px;color:#333;">
+          <p>Hi <strong>${b.guestName}</strong>,</p>
+          <p>We regret to inform you that your booking <strong>#${b.id}</strong> for <strong>${b.eventType}</strong> on <strong>${new Date(b.eventDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</strong> for <strong>${b.guestCount} guests</strong> has been <strong>cancelled</strong>.</p>
+          <p>If this was unexpected or you have any questions, please reach out to us.</p>
+          <p style="font-size:13px;color:#666;">📞 +91 86 86 622 722 | +91 98 49 915 468</p>
+          <p style="font-size:12px;color:#999;">— Padma Catering Team, Visakhapatnam</p>
+        </div>
+      </div>`,
+  },
+  COMPLETED: {
+    subject: (b) => `Thank You for Choosing Padma Catering — Booking #${b.id} 🙏`,
+    html: (b) => `
+      <div style="font-family:Arial,sans-serif;max-width:620px;margin:0 auto;">
+        <div style="background:#f57c00;padding:16px 28px;">
+          <h2 style="margin:0;color:#fff;font-size:18px;">Thank You! 🙏</h2>
+        </div>
+        <div style="padding:24px 28px;font-family:Arial,sans-serif;font-size:14px;color:#333;">
+          <p>Hi <strong>${b.guestName}</strong>,</p>
+          <p>We hope your event was a wonderful success! Your booking <strong>#${b.id}</strong> for <strong>${b.eventType}</strong> has been marked as <strong>completed</strong>.</p>
+          <p>We'd love to hear your feedback — it helps us serve you better.</p>
+          <p style="font-size:13px;color:#666;">📞 +91 86 86 622 722 | +91 98 49 915 468</p>
+          <p style="font-size:12px;color:#999;">— Padma Catering Team, Visakhapatnam</p>
+        </div>
+      </div>`,
+  },
+}
 const upload = multer({ storage: multer.memoryStorage() })
 
 // Disk storage for package images
@@ -108,8 +225,26 @@ router.patch('/bookings/:id', async (req, res) => {
     if (status) data.status = status
     if (adminNotes !== undefined) data.adminNotes = adminNotes
     if (razorpayPaymentId) data.razorpayPaymentId = razorpayPaymentId
-    const booking = await prisma.booking.update({ where: { id: parseInt(req.params.id) }, data })
+    const booking = await prisma.booking.update({
+      where: { id: parseInt(req.params.id) },
+      data,
+      include: {
+        menuItems: { include: { menuItem: { select: { name: true, price: true } } } },
+        coupon: { select: { code: true } },
+      },
+    })
     res.json(booking)
+
+    // Send status-change email (fire and forget)
+    if (status && STATUS_EMAIL[status] && booking.guestEmail) {
+      const tpl = STATUS_EMAIL[status]
+      transporter.sendMail({
+        from: `"Padma Catering" <${process.env.GMAIL_USER}>`,
+        to: booking.guestEmail,
+        subject: tpl.subject(booking),
+        html: tpl.html(booking),
+      }).catch(e => console.error('Status email error:', e.message))
+    }
   } catch (err) {
     res.status(500).json({ error: 'Failed to update booking' })
   }
@@ -873,7 +1008,7 @@ router.get('/pricing/settings', async (req, res) => {
 // PUT /api/admin/pricing/settings
 router.put('/pricing/settings', async (req, res) => {
   try {
-    const fields = ['packingCostPercent','packingChargeFixed','mealboxDelivery','packedFoodDelivery','cateringDelivery','serviceChargeFlat','serviceChargeFreeAbove','minAdvanceHours','gstPercent']
+    const fields = ['packingChargeFixed','mealboxDelivery','packedFoodDelivery','cateringDelivery','serviceChargeFlat','serviceChargeFreeAbove','freeDeliveryAbove','minAdvanceHours','gstPercent']
     const data = {}
     fields.forEach(f => { if (req.body[f] !== undefined) data[f] = Number(req.body[f]) })
     const s = await prisma.pricingSettings.upsert({ where: { id: 1 }, update: data, create: { id: 1, ...data } })

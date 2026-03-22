@@ -23,7 +23,7 @@ fi
 tar -czf "$BACKUP_FILE" \
   --exclude="$SITE_DIR/.git" \
   --exclude="$SITE_DIR/node_modules" \
-  --exclude="$SITE_DIR/main-site/node_modules" \
+  --exclude="$SITE_DIR/node_modules" \
   --exclude="$SITE_DIR/booking-portal/node_modules" \
   --exclude="$SITE_DIR/server/node_modules" \
   "$SITE_DIR" \
@@ -45,7 +45,7 @@ echo "==> Pulling latest code..."
 git pull origin master
 
 echo "==> Building main site..."
-(cd main-site && npm install && npm run build)
+npm install && npm run build
 
 echo "==> Building booking portal..."
 (cd booking-portal && npm install && npm run build)

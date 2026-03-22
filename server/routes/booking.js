@@ -67,8 +67,17 @@ router.post('/', validate('createBooking'), async (req, res) => {
     const pricePerPerson = explicitPricePerPerson || items.reduce((sum, item) => sum + item.price, 0)
     const baseTotal = pricePerPerson * guestCount
     const staffCharge = staffCount * STAFF_RATE
-    const packingCost = Math.round(baseTotal * 0.10)
-    const subtotal = baseTotal + packingCost + (addonCost || 0) + deliveryCharge + staffCharge
+    const packingChargePerPerson = bookingSettings?.packingChargeFixed ?? 10.90
+    const packingCost = Math.round(packingChargePerPerson * guestCount)
+
+    // Free delivery above threshold (0 = disabled)
+    const freeDeliveryAbove = bookingSettings?.freeDeliveryAbove ?? 0
+    let effectiveDeliveryCharge = parseFloat(deliveryCharge) || 0
+    if (freeDeliveryAbove > 0 && baseTotal >= freeDeliveryAbove) {
+      effectiveDeliveryCharge = 0
+    }
+
+    const subtotal = baseTotal + packingCost + (addonCost || 0) + effectiveDeliveryCharge + staffCharge
 
     // Handle coupon with atomic transaction to prevent race condition
     let discount = 0
@@ -97,8 +106,12 @@ router.post('/', validate('createBooking'), async (req, res) => {
           let couponDiscount = 0
           if (coupon.discountType === 'FLAT') {
             couponDiscount = coupon.value
-          } else {
+          } else if (coupon.discountType === 'PERCENTAGE') {
             couponDiscount = (subtotal * coupon.value) / 100
+          } else if (coupon.discountType === 'FREE_DELIVERY') {
+            couponDiscount = effectiveDeliveryCharge
+          } else if (coupon.discountType === 'FREE_PACKING') {
+            couponDiscount = packingCost
           }
 
           // Increment coupon usage atomically
@@ -167,7 +180,7 @@ router.post('/', validate('createBooking'), async (req, res) => {
         venueAddress: sanitized.venueAddress,
         servingStyle: servingStyle || 'BUFFET',
         deliveryType: deliveryType || 'GATE',
-        deliveryCharge: parseFloat(deliveryCharge) || 0,
+        deliveryCharge: effectiveDeliveryCharge,
         staffCount: parseInt(staffCount) || 0,
         staffCharge,
         addonCharge: parseFloat(addonCost) || 0,

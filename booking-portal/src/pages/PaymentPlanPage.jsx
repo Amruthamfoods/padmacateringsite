@@ -27,7 +27,23 @@ export default function PaymentPlanPage() {
   const [acKey, setAcKey] = useState(0)
 
   useEffect(() => {
-    if (authUser?.name && !contact.name) setContact({ name: authUser.name || '', email: authUser.email || '', phone: authUser.phone || '' })
+    if (!authToken) return
+    api.get('/auth/me', { headers: { Authorization: `Bearer ${authToken}` } })
+      .then(r => {
+        const u = r.data
+        setContact(c => ({
+          name: c.name || u.name || '',
+          email: c.email || u.email || '',
+          phone: c.phone || (u.phone ? u.phone.replace(/^91/, '') : ''),
+        }))
+      })
+      .catch(() => {
+        if (authUser?.name) setContact(c => ({
+          name: c.name || authUser.name || '',
+          email: c.email || authUser.email || '',
+          phone: c.phone || '',
+        }))
+      })
   }, [])
 
   useEffect(() => {
@@ -94,7 +110,7 @@ export default function PaymentPlanPage() {
     if (deliveryMeta?.outOfRange) { toast.error('This location is outside our delivery range. Call +91 86 86 622 722'); return }
     if (!contact.name.trim()) { toast.error('Please enter your name'); return }
     if (!contact.phone.trim()) { toast.error('Please enter your phone number'); return }
-    const _phone = contact.phone.replace(/\s/g, '').replace(/^\+91/, '')
+    const _phone = contact.phone.replace(/\s/g, '').replace(/^\+?91/, '')
     if (!/^[6-9]\d{9}$/.test(_phone)) { toast.error('Please enter a valid 10-digit mobile number'); return }
     if (contact.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact.email.trim())) { toast.error('Please enter a valid email address'); return }
     setLoading(true)
@@ -179,7 +195,7 @@ export default function PaymentPlanPage() {
     if (deliveryMeta?.outOfRange) { toast.error('This location is outside our delivery range. Call +91 86 86 622 722'); return }
     if (!contact.name.trim()) { toast.error('Please enter your name'); return }
     if (!contact.phone.trim()) { toast.error('Please enter your phone number'); return }
-    const _phone = contact.phone.replace(/\s/g, '').replace(/^\+91/, '')
+    const _phone = contact.phone.replace(/\s/g, '').replace(/^\+?91/, '')
     if (!/^[6-9]\d{9}$/.test(_phone)) { toast.error('Please enter a valid 10-digit mobile number'); return }
     if (contact.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact.email.trim())) { toast.error('Please enter a valid email address'); return }
     setLoading(true)
